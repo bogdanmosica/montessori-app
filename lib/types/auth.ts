@@ -6,11 +6,12 @@ import { UserRole } from '@/lib/constants/user-roles';
  */
 
 export interface ExtendedUser {
-  id: number;
+  id: string;
   email: string;
   name: string;
-  role: UserRole;
+  role: string; // UserRole but as string for compatibility
   teamId: number | null;
+  schoolId?: string; // For dashboard context
   sessionVersion: number;
 }
 

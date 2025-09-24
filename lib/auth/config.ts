@@ -1,0 +1,35 @@
+// Basic auth config for dashboard implementation
+import type { ExtendedSession } from '@/lib/types/auth';
+
+// Mock auth function for development/demo purposes
+// In production, this would integrate with NextAuth.js or similar
+export async function auth(): Promise<{ user: ExtendedSession['user'] } | null> {
+  // For demo purposes, return a mock admin user
+  // In production, this would validate actual session tokens
+  return {
+    user: {
+      id: '1',
+      email: 'admin@testschool.edu',
+      name: 'Admin User',
+      role: 'ADMIN',
+      teamId: 1,
+      schoolId: '1',
+      sessionVersion: 1,
+    }
+  };
+}
+
+// Mock super admin session for testing
+export async function authAsSuperAdmin(): Promise<{ user: ExtendedSession['user'] } | null> {
+  return {
+    user: {
+      id: '1',
+      email: 'superadmin@montesms.com',
+      name: 'Super Admin',
+      role: 'SUPER_ADMIN',
+      teamId: null,
+      schoolId: undefined,
+      sessionVersion: 1,
+    }
+  };
+}
