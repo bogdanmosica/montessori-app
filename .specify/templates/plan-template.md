@@ -47,7 +47,42 @@
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+### Micro Function Gate
+- [ ] Functions must be small, composable, and focused on one responsibility
+- [ ] No single file should contain excessive unrelated logic
+- [ ] Route handlers and page components are kept minimal with logic extracted to separate files
+
+### Client Directive Gate
+- [ ] `use client` must only appear in the **most child component** that truly requires it
+- [ ] Avoid marking entire routes/pages as client unless absolutely necessary
+- [ ] Server components are preferred for data fetching and initial rendering
+
+### Component Reuse Gate
+- [ ] Before creating a new component, confirm one doesn't already exist in the scoped `components/` folder
+- [ ] Shared UI components should live in the global `ui/` library folder
+- [ ] shadcn/ui and Tailwind used consistently across all components
+
+### Multi-Tenant Security Gate
+- [ ] All database queries are scoped by tenant (school/team)
+- [ ] RBAC enforcement is implemented at both middleware and route level
+- [ ] User actions are logged to `access_logs` with proper tenant isolation
+- [ ] Session management handles role changes appropriately
+
+### Database Efficiency Gate
+- [ ] Only query the database when necessary
+- [ ] Avoid redundant queries; use caching or state management when possible
+- [ ] Drizzle ORM is used instead of raw SQL unless performance requires otherwise
+- [ ] Query performance is tested under realistic multi-tenant load
+
+### No Hardcoding Gate
+- [ ] All configurable values use `const` or `enum` declarations
+- [ ] No hardcoded strings, roles, statuses, or business logic values in implementation
+- [ ] Configuration is externalized and environment-appropriate
+
+### Specification-First Gate
+- [ ] Clear specifications exist before implementation begins
+- [ ] All features have documented requirements and acceptance criteria
+- [ ] Implementation follows approved specifications and design documents
 
 ## Project Structure
 
@@ -76,20 +111,34 @@ tests/
 ├── integration/
 └── unit/
 
-# Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
+# Option 2: Next.js application (when Next.js/React detected)
+app/
+├── (dashboard)/
+│   ├── components/          # Scoped components for dashboard
+│   ├── layout.tsx
+│   └── page.tsx
+├── (auth)/
+│   ├── components/          # Scoped components for auth
+│   ├── sign-in/
+│   └── sign-up/
+├── api/
+│   ├── auth/
+│   ├── users/
+│   └── schools/
+├── globals.css
+└── layout.tsx
 
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
+components/
+├── ui/                     # Shared shadcn/ui components
+│   ├── button.tsx
+│   ├── input.tsx
+│   └── ...
+└── ...
+
+lib/
+├── auth/
+├── db/
+└── utils/
 
 # Option 3: Mobile + API (when "iOS/Android" detected)
 api/
@@ -145,7 +194,7 @@ ios/ or android/
    - Quickstart test = story validation steps
 
 5. **Update agent file incrementally** (O(1) operation):
-   - Run `.specify/scripts/powershell/update-agent-context.ps1 -AgentType copilot`
+   - Run `.specify/scripts/powershell/update-agent-context.ps1 -AgentType claude`
      **IMPORTANT**: Execute it exactly as specified above. Do not add or remove any arguments.
    - If exists: Add only NEW tech from current plan
    - Preserve manual additions between markers
@@ -209,4 +258,4 @@ ios/ or android/
 - [ ] Complexity deviations documented
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+*Based on Monte SMS Constitution v1.0.0 - See `.specify/memory/constitution.md`*
