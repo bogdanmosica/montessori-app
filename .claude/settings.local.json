@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(dir:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsx:*)",
+      "Bash(del libdbmigrate-user-roles.ts)",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(node:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
