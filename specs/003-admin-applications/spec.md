@@ -37,8 +37,13 @@
 - Q: What happens when an application is approved? → A: System creates parent user account, child record, and enrollment entry linking them
 - Q: What happens when an application is rejected? → A: Status updated to rejected, no parent/child records created, optional rejection reason stored
 - Q: Should there be bulk operations for multiple applications? → A: No, individual approval/rejection to ensure careful review
-- Q: What validation is needed for parent account creation? → A: Unique email, password generation/setup, role assignment as Parent
+- Q: What validation is needed for parent account creation? → A: Unique email, account setup with user-defined password, role assignment as Parent
 - Q: Should approved applications be removable from the list? → A: No, maintain audit trail with status filtering options
+- Q: For the applications management system, what is the expected concurrent usage pattern during peak enrollment periods? → A: Low concurrency: 1-3 admins processing applications simultaneously per school
+- Q: What should happen when an admin tries to approve an application that another admin is currently processing? → A: Block with message: "Application being processed by [Admin Name]"
+- Q: What level of audit detail should be captured for application processing actions? → A: Basic: Admin ID, application ID, action (approve/reject), timestamp
+- Q: When generating temporary passwords for new parent accounts, what approach should be used? → A: They will add their own password on signup
+- Q: What is the maximum acceptable page load time for the applications table under typical usage conditions? → A: Under 2 seconds: Acceptable for administrative interfaces
 
 ---
 
@@ -60,6 +65,7 @@ As a Monte SMS Admin, I need to review and process school applications so that I
 - What if child enrollment fails after parent account creation? Rollback parent account or mark for manual intervention.
 - How are duplicate applications handled? Show warning if similar parent/child combination exists.
 - What if application data is incomplete? Highlight missing fields and allow admin to request additional information.
+- What if multiple admins try to process the same application? Block concurrent processing with message showing which admin is currently working on it.
 
 ## Requirements
 
@@ -68,7 +74,7 @@ As a Monte SMS Admin, I need to review and process school applications so that I
 - **FR-002**: System MUST provide search functionality to filter applications by parent name, child name, or contact information
 - **FR-003**: System MUST provide status filtering options (pending, approved, rejected, all) with URL state preservation
 - **FR-004**: System MUST allow Admin users to approve pending applications through an approval workflow
-- **FR-005**: System MUST create parent user account with Parent role when application is approved
+- **FR-005**: System MUST create parent user account with Parent role when application is approved, requiring parent to set their own password during account activation
 - **FR-006**: System MUST create child record linked to parent when application is approved  
 - **FR-007**: System MUST create enrollment record linking parent and child when application is approved
 - **FR-008**: System MUST allow Admin users to reject applications with optional rejection reason
@@ -76,15 +82,16 @@ As a Monte SMS Admin, I need to review and process school applications so that I
 - **FR-010**: System MUST validate parent email uniqueness before account creation
 - **FR-011**: System MUST provide AddChildForm and AddParentForm components for data entry during approval
 - **FR-012**: System MUST enforce admin-only access through middleware protection
-- **FR-013**: System MUST log all application approval/rejection actions to access_logs for audit trail
+- **FR-013**: System MUST log all application approval/rejection actions to access_logs with basic audit data (admin ID, application ID, action type, timestamp) for audit trail
 - **FR-014**: System MUST use enumerated constants for all statuses, roles, and validation rules without hardcoded strings
-- **FR-015**: System MUST render initial table server-side with performance under 500ms
+- **FR-015**: System MUST render initial table server-side with performance under 2 seconds for typical administrative usage
+- **FR-016**: System MUST prevent concurrent processing of the same application by blocking access with message indicating which admin is currently processing the application
 
 ### Non-Functional Requirements
-- **NFR-001**: Applications table MUST render server-side with Time to First Byte (TTFB) under 500ms
+- **NFR-001**: Applications table MUST render server-side with Time to First Byte (TTFB) under 2 seconds for typical administrative usage
 - **NFR-002**: Approval workflow MUST complete database transactions atomically (parent + child + enrollment creation)
-- **NFR-003**: System MUST handle concurrent application processing without data corruption
-- **NFR-004**: Search and filtering operations MUST execute efficiently with database indexing
+- **NFR-003**: System MUST handle concurrent application processing without data corruption, optimized for low concurrency (1-3 admins per school)
+- **NFR-004**: Search and filtering operations MUST execute with query response times under 200ms using optimized database indexing
 - **NFR-005**: Component architecture MUST follow micro-functions principle with small, focused files
 - **NFR-006**: All database queries MUST be tenant-scoped for multi-tenant security compliance
 

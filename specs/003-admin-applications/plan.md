@@ -43,7 +43,7 @@ Implement admin-only `/admin/applications` page for montessori-app that allows a
 **Testing**: Jest for unit tests, integration tests for API endpoints and database operations  
 **Target Platform**: Web application (server-side rendered pages with selective client components)
 **Project Type**: web - Next.js frontend+backend application  
-**Performance Goals**: Under 2-second page load, low concurrency optimization (1-3 admins per school)  
+**Performance Goals**: Under 2-second page load TTFB for typical administrative usage, low concurrency optimization (1-3 admins per school)  
 **Constraints**: Admin-only access via middleware, atomic transactions for approval workflow, tenant-scoped queries  
 **Scale/Scope**: Multi-tenant SaaS supporting hundreds of schools, thousands of applications per school
 
@@ -86,40 +86,6 @@ Implement admin-only `/admin/applications` page for montessori-app that allows a
 - [x] Clear specifications exist before implementation begins
 - [x] All features have documented requirements and acceptance criteria
 - [x] Implementation follows approved specifications and design documents
-- [ ] No single file should contain excessive unrelated logic
-- [ ] Route handlers and page components are kept minimal with logic extracted to separate files
-
-### Client Directive Gate
-- [ ] `use client` must only appear in the **most child component** that truly requires it
-- [ ] Avoid marking entire routes/pages as client unless absolutely necessary
-- [ ] Server components are preferred for data fetching and initial rendering
-
-### Component Reuse Gate
-- [ ] Before creating a new component, confirm one doesn't already exist in the scoped `components/` folder
-- [ ] Shared UI components should live in the global `ui/` library folder
-- [ ] shadcn/ui and Tailwind used consistently across all components
-
-### Multi-Tenant Security Gate
-- [ ] All database queries are scoped by tenant (school/team)
-- [ ] RBAC enforcement is implemented at both middleware and route level
-- [ ] User actions are logged to `access_logs` with proper tenant isolation
-- [ ] Session management handles role changes appropriately
-
-### Database Efficiency Gate
-- [ ] Only query the database when necessary
-- [ ] Avoid redundant queries; use caching or state management when possible
-- [ ] Drizzle ORM is used instead of raw SQL unless performance requires otherwise
-- [ ] Query performance is tested under realistic multi-tenant load
-
-### No Hardcoding Gate
-- [ ] All configurable values use `const` or `enum` declarations
-- [ ] No hardcoded strings, roles, statuses, or business logic values in implementation
-- [ ] Configuration is externalized and environment-appropriate
-
-### Specification-First Gate
-- [ ] Clear specifications exist before implementation begins
-- [ ] All features have documented requirements and acceptance criteria
-- [ ] Implementation follows approved specifications and design documents
 
 ## Project Structure
 

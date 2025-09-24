@@ -44,8 +44,8 @@
 - **API routes**: `app/api/` for Next.js API routes
 
 ## Phase 3.1: Setup & Constants
-- [ ] T001 [P] Create application constants file at `app/admin/applications/constants.ts` with ApplicationStatus, EnrollmentStatus, and validation enums
-- [ ] T002 [P] Create applications schema at `lib/db/schema/applications.ts` with all fields, indexes, and relationships
+- [ ] T001 [P] Create application constants file at `app/admin/applications/constants.ts` with ApplicationStatus, EnrollmentStatus, and validation enums, ensuring all hardcoded strings are eliminated per FR-014
+- [ ] T002 [P] Create applications schema at `lib/db/schema/applications.ts` with all fields, optimized indexes for search/filtering performance (NFR-004), and relationships
 - [ ] T003 [P] Create enrollments schema at `lib/db/schema/enrollments.ts` with enrollment entity definition
 
 ## Phase 3.2: Contract Tests (TDD)
@@ -55,7 +55,7 @@
 - [ ] T007 [P] Create contract test for POST /api/users at `__tests__/api/users-create.test.ts`
 
 ## Phase 3.3: Database & Queries
-- [ ] T008 [P] Create applications queries helper at `lib/db/queries/applications.ts` with pagination, search, and filtering
+- [ ] T008 [P] Create applications queries helper at `lib/db/queries/applications.ts` with optimized pagination, search, and filtering ensuring <200ms response times per NFR-004
 - [ ] T009 Extend users schema at `lib/db/schema/users.ts` to include applicationId and isFromApplication fields
 - [ ] T010 Extend children schema at `lib/db/schema/children.ts` to include applicationId field
 
@@ -78,7 +78,7 @@
 ## Phase 3.7: Integration & Workflows
 - [ ] T021 Create main applications page at `app/admin/applications/page.tsx` composing all components with server-side rendering
 - [ ] T022 Implement approval workflow with atomic transactions linking applications server functions and API endpoints
-- [ ] T023 Add middleware protection for admin-only access to `/admin/applications` route
+- [ ] T023 Add middleware protection for admin-only access to `/admin/applications` route using existing Auth.js RBAC patterns
 - [ ] T024 Implement concurrent processing prevention with admin identification in applications table
 
 ## Phase 3.8: Integration Tests
