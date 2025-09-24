@@ -5,10 +5,11 @@
       "Bash(dir:*)",
       "Bash(npm run:*)",
       "Bash(npx tsx:*)",
-      "Bash(del libdbmigrate-user-roles.ts)",
       "Bash(npx drizzle-kit:*)",
       "Bash(node:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
+      "Bash(pnpm add:*)"
     ],
     "deny": [],
     "ask": []
