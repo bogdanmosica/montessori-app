@@ -7,7 +7,8 @@
       "Bash(npx tsx:*)",
       "Bash(del libdbmigrate-user-roles.ts)",
       "Bash(npx drizzle-kit:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
