@@ -46,12 +46,12 @@ export async function middleware(request: NextRequest) {
 
       const { user } = session;
 
-      // Check if user has admin role
-      if (user.role !== UserRole.ADMIN) {
+      // Check if user has admin role (both admin and super_admin allowed)
+      if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
         // Non-admin user trying to access admin route
         await logAccessAttempt({
           request,
-          userId: user.id,
+          userId: parseInt(user.id as string),
           teamId: user.teamId,
           route: pathname,
           success: false,
@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
       // Admin user accessing admin route - log successful access
       await logAccessAttempt({
         request,
-        userId: user.id,
+        userId: parseInt(user.id as string),
         teamId: user.teamId,
         route: pathname,
         success: true,

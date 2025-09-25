@@ -47,7 +47,7 @@ export async function setSession(user: NewUser & { teamId?: number | null; name?
   const expiresInOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const session: SessionData = {
     user: {
-      id: user.id!,
+      id: user.id!.toString(),
       email: user.email,
       name: user.name || '',
       role: (user.role as UserRole) || UserRole.PARENT,

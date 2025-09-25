@@ -2,7 +2,7 @@
 import { db } from '@/lib/db/drizzle';
 import { securityAlerts } from '@/lib/db/schema';
 import { eq, and, desc, gte, isNull, or } from 'drizzle-orm';
-import type { SecurityAlert, AlertSeverity, AlertType } from '@/lib/types/dashboard';
+import { AlertSeverity, AlertType, type SecurityAlert } from '@/lib/types/dashboard';
 
 export async function getSecurityAlerts(
   schoolId?: string,
@@ -49,7 +49,7 @@ export async function getSecurityAlerts(
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      query = query.where(and(...conditions)) as typeof query;
     }
 
     const alerts = await query
@@ -196,13 +196,13 @@ export async function escalateAlertSeverity(
     // Escalate severity
     switch (alert.severity) {
       case 'low':
-        newSeverity = 'medium';
+        newSeverity = AlertSeverity.MEDIUM;
         break;
       case 'medium':
-        newSeverity = 'high';
+        newSeverity = AlertSeverity.HIGH;
         break;
       case 'high':
-        newSeverity = 'critical';
+        newSeverity = AlertSeverity.CRITICAL;
         break;
     }
 

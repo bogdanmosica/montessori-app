@@ -97,11 +97,14 @@ export async function GET(request: NextRequest) {
             return {
               systemMetrics,
               trends: {
-                period: 'month',
-                systemGrowth: {
-                  newSchools: Math.floor(Math.random() * 5) + 1, // Demo data
-                  studentGrowth: Math.floor(Math.random() * 15) + 5,
-                  teacherGrowth: Math.floor(Math.random() * 20) + 8,
+                period: 'month' as const,
+                dataPoints: [], // Demo data - empty for now
+                trends: {
+                  applicationsChange: Math.floor(Math.random() * 15) + 5, // Demo data
+                  enrollmentsChange: Math.floor(Math.random() * 20) + 8,
+                  engagementChange: Math.floor(Math.random() * 10) + 3,
+                  revenueChange: Math.floor(Math.random() * 25) + 10,
+                  capacityChange: Math.floor(Math.random() * 5) + 2,
                 }
               }
             };
@@ -125,7 +128,8 @@ export async function GET(request: NextRequest) {
           success: true,
           data: {
             aggregated: true,
-            ...cachedData
+            systemMetrics: cachedData.systemMetrics,
+            trends: cachedData.trends,
           }
         } as DashboardApiResponse, {
           status: 200,

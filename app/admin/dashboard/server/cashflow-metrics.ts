@@ -134,8 +134,8 @@ async function calculateRevenueBreakdown(
     ))
     .groupBy(payments.status);
 
-  const pendingPayments = paymentBreakdown.find(p => p.status === 'pending')?.totalAmount || 0;
-  const overduePayments = paymentBreakdown.find(p => p.status === 'overdue')?.totalAmount || 0;
+  const pendingPayments = Number(paymentBreakdown.find(p => p.status === 'pending')?.totalAmount || 0);
+  const overduePayments = Number(paymentBreakdown.find(p => p.status === 'overdue')?.totalAmount || 0);
 
   return {
     singleChildFamilies: {

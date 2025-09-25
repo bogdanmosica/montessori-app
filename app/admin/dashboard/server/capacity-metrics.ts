@@ -1,6 +1,6 @@
 // T013: Create capacity utilization helpers
 import { db } from '@/lib/db/drizzle';
-import { children, families, schoolSettings, applications } from '@/lib/db/schema';
+import { children, families, schoolSettings, applicationsNew } from '@/lib/db/schema';
 import { eq, and, count, sql } from 'drizzle-orm';
 import type { AgeGroupCapacity } from '@/lib/types/dashboard';
 import { DEFAULT_AGE_GROUPS } from '../constants';
@@ -56,10 +56,10 @@ export async function getCapacityMetrics(schoolId: string) {
     // Get pending applications count
     const pendingApplications = await db
       .select({ count: count() })
-      .from(applications)
+      .from(applicationsNew)
       .where(and(
-        eq(applications.schoolId, parseInt(schoolId)),
-        eq(applications.status, 'pending')
+        eq(applicationsNew.schoolId, parseInt(schoolId)),
+        eq(applicationsNew.status, 'pending')
       ));
 
     return {

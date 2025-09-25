@@ -116,7 +116,7 @@ async function getSubscriptionStatus(schoolId: string) {
       nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       studentsUsed: capacityMetrics.activeEnrollments,
       studentsLimit: getTierLimit(schoolData[0].planName || 'premium'),
-      daysUntilExpiry: null,
+      daysUntilExpiry: undefined,
     };
 
     return subscriptionStatus;
@@ -129,7 +129,7 @@ async function getSubscriptionStatus(schoolId: string) {
       nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       studentsUsed: 0,
       studentsLimit: 200,
-      daysUntilExpiry: null,
+      daysUntilExpiry: undefined,
     };
   }
 }

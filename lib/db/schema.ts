@@ -26,6 +26,9 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash').notNull(),
   role: userRoleEnum('role').notNull().default('parent'),
   sessionVersion: integer('session_version').notNull().default(1),
+  // Application-related fields for users created during approval process
+  applicationId: uuid('application_id'), // Links back to originating application
+  isFromApplication: boolean('is_from_application').notNull().default(false), // Distinguishes application-generated users
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
@@ -117,6 +120,8 @@ export const children = pgTable('children', {
   dateOfBirth: timestamp('date_of_birth').notNull(),
   enrollmentStatus: enrollmentStatusEnum('enrollment_status').notNull().default('pending'),
   monthlyFee: integer('monthly_fee').notNull().default(0), // cents
+  // Application-related field for children created during approval process
+  applicationId: uuid('application_id'), // Links back to originating application
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -133,6 +138,46 @@ export const applications = pgTable('applications', {
   submittedAt: timestamp('submitted_at').notNull().defaultNow(),
   reviewedAt: timestamp('reviewed_at'),
   reviewedBy: integer('reviewed_by').references(() => users.id),
+});
+
+// New applications table for admin interface with detailed fields
+export const applicationsNew = pgTable('applications_new', {
+  // Primary identification
+  id: uuid('id').primaryKey().defaultRandom(),
+
+  // Multi-tenant scoping
+  schoolId: integer('school_id')
+    .notNull()
+    .references(() => teams.id),
+
+  // Parent information
+  parentName: varchar('parent_name', { length: 255 }).notNull(),
+  parentEmail: varchar('parent_email', { length: 255 }).notNull(),
+  parentPhone: varchar('parent_phone', { length: 20 }),
+
+  // Child information
+  childName: varchar('child_name', { length: 255 }).notNull(),
+  childDateOfBirth: timestamp('child_date_of_birth').notNull(),
+  childGender: varchar('child_gender', { length: 10 }),
+
+  // Program and enrollment preferences
+  programRequested: varchar('program_requested', { length: 100 }).notNull(),
+  preferredStartDate: timestamp('preferred_start_date'),
+
+  // Application status and workflow
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  notes: text('notes'),
+
+  // Approval workflow fields
+  approvedAt: timestamp('approved_at'),
+  approvedBy: integer('approved_by').references(() => users.id),
+  rejectedAt: timestamp('rejected_at'),
+  rejectedBy: integer('rejected_by').references(() => users.id),
+  rejectionReason: text('rejection_reason'),
+
+  // Timestamps
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 export const securityAlerts = pgTable('security_alerts', {
@@ -290,6 +335,23 @@ export const applicationsRelations = relations(applications, ({ one }) => ({
     fields: [applications.reviewedBy],
     references: [users.id],
     relationName: 'reviewer',
+  }),
+}));
+
+export const applicationsNewRelations = relations(applicationsNew, ({ one }) => ({
+  school: one(teams, {
+    fields: [applicationsNew.schoolId],
+    references: [teams.id],
+  }),
+  approvedByUser: one(users, {
+    fields: [applicationsNew.approvedBy],
+    references: [users.id],
+    relationName: 'approver',
+  }),
+  rejectedByUser: one(users, {
+    fields: [applicationsNew.rejectedBy],
+    references: [users.id],
+    relationName: 'rejecter',
   }),
 }));
 

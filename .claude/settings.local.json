@@ -9,7 +9,12 @@
       "Bash(node:*)",
       "Bash(git rm:*)",
       "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm update:*)"
     ],
     "deny": [],
     "ask": []

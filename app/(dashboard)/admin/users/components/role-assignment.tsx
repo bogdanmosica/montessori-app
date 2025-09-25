@@ -32,6 +32,7 @@ const roleIcons = {
   [UserRole.PARENT]: Users,
   [UserRole.TEACHER]: GraduationCap,
   [UserRole.ADMIN]: Shield,
+  [UserRole.SUPER_ADMIN]: Shield,
 };
 
 export function RoleAssignment({ user, onRoleUpdated }: RoleAssignmentProps) {
@@ -94,6 +95,8 @@ export function RoleAssignment({ user, onRoleUpdated }: RoleAssignmentProps) {
     switch (role) {
       case UserRole.ADMIN:
         return 'text-red-600 bg-red-50';
+      case UserRole.SUPER_ADMIN:
+        return 'text-purple-600 bg-purple-50';
       case UserRole.TEACHER:
         return 'text-blue-600 bg-blue-50';
       case UserRole.PARENT:
