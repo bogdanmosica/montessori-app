@@ -1,0 +1,524 @@
+openapi: 3.0.3
+info:
+  title: Admin Applications Management API
+  description: API endpoints for managing student admission applications
+  version: 1.0.0
+  
+servers:
+  - url: /api
+    description: Application API routes
+
+paths:
+  /admin/applications:
+    get:
+      summary: List applications with filtering and pagination
+      tags: [Applications]
+      security:
+        - adminAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, APPROVED, REJECTED]
+        - name: search
+          in: query
+          description: Search by child name or parent name
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: Applications list with pagination metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  applications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApplicationListItem'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/applications/{id}:
+    get:
+      summary: Get detailed application information
+      tags: [Applications]
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Application details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/applications/{id}/approve:
+    post:
+      summary: Approve an application and create child/parent profiles
+      tags: [Applications]
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Application approved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/ApplicationDetail'
+                  child_profile:
+                    $ref: '#/components/schemas/ChildProfile'
+                  parent_profiles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ParentProfile'
+                  access_log:
+                    $ref: '#/components/schemas/AccessLogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Application already processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/applications/{id}/reject:
+    post:
+      summary: Reject an application
+      tags: [Applications]
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Rejection details
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: Optional rejection reason for internal notes
+      responses:
+        '200':
+          description: Application rejected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/ApplicationDetail'
+                  access_log:
+                    $ref: '#/components/schemas/AccessLogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Application already processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/children:
+    post:
+      summary: Create child profile directly (bypass application process)
+      tags: [Children]
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChildRequest'
+      responses:
+        '201':
+          description: Child profile created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  child_profile:
+                    $ref: '#/components/schemas/ChildProfile'
+                  parent_profiles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ParentProfile'
+                  access_log:
+                    $ref: '#/components/schemas/AccessLogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    adminAuth:
+      type: http
+      scheme: bearer
+      description: JWT token with Admin role
+
+  schemas:
+    ApplicationListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+        child_first_name:
+          type: string
+        child_last_name:
+          type: string
+        child_date_of_birth:
+          type: string
+          format: date
+        preferred_start_date:
+          type: string
+          format: date
+        parent1_first_name:
+          type: string
+        parent1_last_name:
+          type: string
+        parent1_email:
+          type: string
+          format: email
+        submitted_at:
+          type: string
+          format: date-time
+        processed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ApplicationDetail:
+      allOf:
+        - $ref: '#/components/schemas/ApplicationListItem'
+        - type: object
+          properties:
+            child_gender:
+              type: string
+              nullable: true
+            special_needs:
+              type: string
+              nullable: true
+            medical_conditions:
+              type: string
+              nullable: true
+            parent1_phone:
+              type: string
+              nullable: true
+            parent1_relationship:
+              type: string
+              enum: [MOTHER, FATHER, GUARDIAN, OTHER]
+            parent2_first_name:
+              type: string
+              nullable: true
+            parent2_last_name:
+              type: string
+              nullable: true
+            parent2_email:
+              type: string
+              format: email
+              nullable: true
+            parent2_phone:
+              type: string
+              nullable: true
+            parent2_relationship:
+              type: string
+              enum: [MOTHER, FATHER, GUARDIAN, OTHER]
+              nullable: true
+            processed_by_admin_id:
+              type: string
+              format: uuid
+              nullable: true
+
+    ChildProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        application_id:
+          type: string
+          format: uuid
+          nullable: true
+        first_name:
+          type: string
+        last_name:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        gender:
+          type: string
+          nullable: true
+        enrollment_status:
+          type: string
+          enum: [ACTIVE, INACTIVE, WAITLISTED]
+        start_date:
+          type: string
+          format: date
+        special_needs:
+          type: string
+          nullable: true
+        medical_conditions:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        created_by_admin_id:
+          type: string
+          format: uuid
+
+    ParentProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        emergency_contact:
+          type: boolean
+        relationship_to_child:
+          type: string
+          enum: [MOTHER, FATHER, GUARDIAN, OTHER]
+        primary_contact:
+          type: boolean
+        pickup_authorized:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    CreateChildRequest:
+      type: object
+      required:
+        - child
+        - parents
+      properties:
+        child:
+          type: object
+          required:
+            - first_name
+            - last_name
+            - date_of_birth
+            - start_date
+          properties:
+            first_name:
+              type: string
+              maxLength: 100
+            last_name:
+              type: string
+              maxLength: 100
+            date_of_birth:
+              type: string
+              format: date
+            gender:
+              type: string
+              maxLength: 50
+            start_date:
+              type: string
+              format: date
+            special_needs:
+              type: string
+              maxLength: 1000
+            medical_conditions:
+              type: string
+              maxLength: 1000
+        parents:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items:
+            type: object
+            required:
+              - first_name
+              - last_name
+              - email
+              - relationship_type
+            properties:
+              first_name:
+                type: string
+                maxLength: 100
+              last_name:
+                type: string
+                maxLength: 100
+              email:
+                type: string
+                format: email
+                maxLength: 255
+              phone:
+                type: string
+                maxLength: 20
+              relationship_type:
+                type: string
+                enum: [MOTHER, FATHER, GUARDIAN, OTHER]
+              primary_contact:
+                type: boolean
+                default: false
+              pickup_authorized:
+                type: boolean
+                default: true
+
+    AccessLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        action_type:
+          type: string
+          enum: [APPLICATION_APPROVED, APPLICATION_REJECTED, CHILD_CREATED, APPLICATION_VIEWED]
+        target_type:
+          type: string
+          enum: [APPLICATION, CHILD, PARENT]
+        target_id:
+          type: string
+          format: uuid
+        details:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total_items:
+          type: integer
+        total_pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Forbidden:
+      description: Admin role required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

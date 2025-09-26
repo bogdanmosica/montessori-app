@@ -11,13 +11,18 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
-export const userRoleEnum = pgEnum('user_role', ['parent', 'teacher', 'admin', 'SUPER_ADMIN']);
+export const userRoleEnum = pgEnum('user_role', ['parent', 'teacher', 'admin']);
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['enrolled', 'pending', 'waitlisted', 'withdrawn']);
 export const paymentStatusEnum = pgEnum('payment_status', ['current', 'pending', 'overdue', 'partial']);
 export const alertSeverityEnum = pgEnum('alert_severity', ['low', 'medium', 'high', 'critical']);
 export const alertTypeEnum = pgEnum('alert_type', ['failed_logins', 'suspicious_ip', 'expired_sessions', 'data_breach_attempt', 'unusual_activity']);
 export const subscriptionTierEnum = pgEnum('subscription_tier', ['basic', 'premium', 'enterprise']);
 export const subscriptionStateEnum = pgEnum('subscription_state', ['active', 'past_due', 'canceled', 'trial']);
+export const applicationStatusEnum = pgEnum('application_status', ['PENDING', 'APPROVED', 'REJECTED']);
+export const relationshipTypeEnum = pgEnum('relationship_type', ['MOTHER', 'FATHER', 'GUARDIAN', 'OTHER']);
+export const childEnrollmentStatusEnum = pgEnum('child_enrollment_status', ['ACTIVE', 'INACTIVE', 'WAITLISTED']);
+export const accessLogActionEnum = pgEnum('access_log_action', ['APPLICATION_APPROVED', 'APPLICATION_REJECTED', 'CHILD_CREATED', 'APPLICATION_VIEWED']);
+export const accessLogTargetEnum = pgEnum('access_log_target', ['APPLICATION', 'CHILD', 'PARENT']);
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -109,23 +114,49 @@ export const families = pgTable('families', {
 
 export const children = pgTable('children', {
   id: uuid('id').primaryKey().defaultRandom(),
-  familyId: uuid('family_id')
+  schoolId: integer('school_id')
     .notNull()
-    .references(() => families.id),
+    .references(() => teams.id),
+  applicationId: uuid('application_id').references(() => applications.id), // nullable for direct creation
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
   dateOfBirth: timestamp('date_of_birth').notNull(),
-  enrollmentStatus: enrollmentStatusEnum('enrollment_status').notNull().default('pending'),
   monthlyFee: integer('monthly_fee').notNull().default(0), // cents
+  gender: varchar('gender', { length: 50 }),
+  enrollmentStatus: childEnrollmentStatusEnum('enrollment_status').notNull().default('ACTIVE'),
+  startDate: timestamp('start_date').notNull(),
+  specialNeeds: text('special_needs'),
+  medicalConditions: text('medical_conditions'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdByAdminId: integer('created_by_admin_id')
+    .notNull()
+    .references(() => users.id),
 });
 
-export const applications = pgTable('applications', {
+export const parentProfiles = pgTable('parent_profiles', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
     .references(() => teams.id),
+  firstName: varchar('first_name', { length: 100 }).notNull(),
+  lastName: varchar('last_name', { length: 100 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  phone: varchar('phone', { length: 20 }),
+  address: text('address'),
+  emergencyContact: boolean('emergency_contact').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const parentChildRelationships = pgTable('parent_child_relationships', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  schoolId: integer('school_id')
+    .notNull()
+    .references(() => teams.id),
+  parentId: uuid('parent_id')
+    .notNull()
+    .references(() => parentProfiles.id),
   childId: uuid('child_id')
     .notNull()
     .references(() => children.id),
@@ -133,6 +164,54 @@ export const applications = pgTable('applications', {
   submittedAt: timestamp('submitted_at').notNull().defaultNow(),
   reviewedAt: timestamp('reviewed_at'),
   reviewedBy: integer('reviewed_by').references(() => users.id),
+  primaryContact: boolean('primary_contact').notNull().default(false),
+});
+
+export const applications = pgTable('applications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  schoolId: integer('school_id')
+    .notNull()
+    .references(() => teams.id),
+  status: applicationStatusEnum('status').notNull().default('PENDING'),
+  childFirstName: varchar('child_first_name', { length: 100 }).notNull(),
+  childLastName: varchar('child_last_name', { length: 100 }).notNull(),
+  childDateOfBirth: timestamp('child_date_of_birth').notNull(),
+  childGender: varchar('child_gender', { length: 50 }),
+  preferredStartDate: timestamp('preferred_start_date').notNull(),
+  specialNeeds: text('special_needs'),
+  medicalConditions: text('medical_conditions'),
+  parent1FirstName: varchar('parent1_first_name', { length: 100 }).notNull(),
+  parent1LastName: varchar('parent1_last_name', { length: 100 }).notNull(),
+  parent1Email: varchar('parent1_email', { length: 255 }).notNull(),
+  parent1Phone: varchar('parent1_phone', { length: 20 }),
+  parent1Relationship: relationshipTypeEnum('parent1_relationship').notNull(),
+  parent2FirstName: varchar('parent2_first_name', { length: 100 }),
+  parent2LastName: varchar('parent2_last_name', { length: 100 }),
+  parent2Email: varchar('parent2_email', { length: 255 }),
+  parent2Phone: varchar('parent2_phone', { length: 20 }),
+  parent2Relationship: relationshipTypeEnum('parent2_relationship'),
+  submittedAt: timestamp('submitted_at').notNull().defaultNow(),
+  processedAt: timestamp('processed_at'),
+  processedByAdminId: integer('processed_by_admin_id').references(() => users.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const adminAccessLogs = pgTable('admin_access_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  schoolId: integer('school_id')
+    .notNull()
+    .references(() => teams.id),
+  adminUserId: integer('admin_user_id')
+    .notNull()
+    .references(() => users.id),
+  actionType: accessLogActionEnum('action_type').notNull(),
+  targetType: accessLogTargetEnum('target_type').notNull(),
+  targetId: varchar('target_id', { length: 255 }).notNull(),
+  details: text('details'), // JSON string
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+  timestamp: timestamp('timestamp').notNull().defaultNow(),
 });
 
 export const securityAlerts = pgTable('security_alerts', {
@@ -270,26 +349,64 @@ export const familiesRelations = relations(families, ({ one, many }) => ({
 }));
 
 export const childrenRelations = relations(children, ({ one, many }) => ({
-  family: one(families, {
-    fields: [children.familyId],
-    references: [families.id],
+  school: one(teams, {
+    fields: [children.schoolId],
+    references: [teams.id],
   }),
-  applications: many(applications),
+  application: one(applications, {
+    fields: [children.applicationId],
+    references: [applications.id],
+  }),
+  createdByAdmin: one(users, {
+    fields: [children.createdByAdminId],
+    references: [users.id],
+  }),
+  parentRelationships: many(parentChildRelationships),
 }));
 
-export const applicationsRelations = relations(applications, ({ one }) => ({
+export const applicationsRelations = relations(applications, ({ one, many }) => ({
   school: one(teams, {
     fields: [applications.schoolId],
     references: [teams.id],
   }),
+  processedByAdmin: one(users, {
+    fields: [applications.processedByAdminId],
+    references: [users.id],
+  }),
+  childProfiles: many(children), // children created from this application
+}));
+
+export const parentProfilesRelations = relations(parentProfiles, ({ one, many }) => ({
+  school: one(teams, {
+    fields: [parentProfiles.schoolId],
+    references: [teams.id],
+  }),
+  childRelationships: many(parentChildRelationships),
+}));
+
+export const parentChildRelationshipsRelations = relations(parentChildRelationships, ({ one }) => ({
+  school: one(teams, {
+    fields: [parentChildRelationships.schoolId],
+    references: [teams.id],
+  }),
+  parent: one(parentProfiles, {
+    fields: [parentChildRelationships.parentId],
+    references: [parentProfiles.id],
+  }),
   child: one(children, {
-    fields: [applications.childId],
+    fields: [parentChildRelationships.childId],
     references: [children.id],
   }),
-  reviewedBy: one(users, {
-    fields: [applications.reviewedBy],
+}));
+
+export const adminAccessLogsRelations = relations(adminAccessLogs, ({ one }) => ({
+  school: one(teams, {
+    fields: [adminAccessLogs.schoolId],
+    references: [teams.id],
+  }),
+  adminUser: one(users, {
+    fields: [adminAccessLogs.adminUserId],
     references: [users.id],
-    relationName: 'reviewer',
   }),
 }));
 
@@ -358,6 +475,12 @@ export type TeacherActivity = typeof teacherActivity.$inferSelect;
 export type NewTeacherActivity = typeof teacherActivity.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
+export type ParentProfile = typeof parentProfiles.$inferSelect;
+export type NewParentProfile = typeof parentProfiles.$inferInsert;
+export type ParentChildRelationship = typeof parentChildRelationships.$inferSelect;
+export type NewParentChildRelationship = typeof parentChildRelationships.$inferInsert;
+export type AdminAccessLog = typeof adminAccessLogs.$inferSelect;
+export type NewAdminAccessLog = typeof adminAccessLogs.$inferInsert;
 
 export type TeamDataWithMembers = Team & {
   teamMembers: (TeamMember & {

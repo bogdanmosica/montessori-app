@@ -183,7 +183,7 @@ async function seedDashboardData(teamId: number, adminUserId: number, teacherUse
     firstName: 'Ava',
     lastName: 'Wilson',
     dateOfBirth: new Date(now.getFullYear() - 3, 4, 8), // 3 years old
-    enrollmentStatus: 'pending',
+    enrollmentStatus: 'WAITLISTED',
     monthlyFee: 65000,
   }).returning();
 
@@ -331,17 +331,17 @@ async function seed() {
     {
       teamId: team.id,
       userId: adminUser.id,
-      role: 'admin',
+      role: UserRole.ADMIN,
     },
     {
       teamId: team.id,
       userId: teacherUser.id,
-      role: 'teacher',
+      role: UserRole.TEACHER,
     },
     {
       teamId: team.id,
       userId: parentUser.id,
-      role: 'parent',
+      role: UserRole.PARENT,
     },
   ]);
 

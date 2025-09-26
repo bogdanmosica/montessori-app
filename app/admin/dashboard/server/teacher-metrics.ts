@@ -3,6 +3,7 @@ import { db } from '@/lib/db/drizzle';
 import { teacherActivity, teamMembers, users } from '@/lib/db/schema';
 import { eq, and, gte, count, sum, avg, desc } from 'drizzle-orm';
 import type { TeacherActivitySnapshot } from '@/lib/types/dashboard';
+import { UserRole } from '@/lib/constants/user-roles';
 
 export async function getTeacherActivityMetrics(schoolId: string): Promise<TeacherActivitySnapshot> {
   try {
@@ -16,7 +17,7 @@ export async function getTeacherActivityMetrics(schoolId: string): Promise<Teach
       .leftJoin(users, eq(users.id, teamMembers.userId))
       .where(and(
         eq(teamMembers.teamId, parseInt(schoolId)),
-        eq(users.role, 'teacher')
+        eq(users.role, UserRole.TEACHER)
       ));
 
     const totalTeachers = totalTeachersQuery[0]?.count || 0;

@@ -11,7 +11,7 @@ export async function getDashboardContext(): Promise<DashboardContextValue> {
   }
 
   const userRole = session.user.role;
-  const isSuper = userRole === 'SUPER_ADMIN';
+  const isSuper = false; // SUPER_ADMIN role removed
   const schoolId = isSuper ? undefined : session.user.schoolId;
 
   if (!isSuper && !schoolId) {
@@ -29,27 +29,19 @@ export async function getDashboardContext(): Promise<DashboardContextValue> {
 }
 
 export function requireAdminPermissions(userRole: string): void {
-  const allowedRoles = ['ADMIN', 'SUPER_ADMIN'];
-
-  if (!allowedRoles.includes(userRole)) {
+  if (userRole !== UserRole.ADMIN) {
     throw new Error('Admin permissions required');
   }
 }
 
 export function requireSuperAdminPermissions(userRole: string): void {
-  if (userRole !== 'SUPER_ADMIN') {
-    throw new Error('Super Admin permissions required');
-  }
+  // SUPER_ADMIN role removed - no users can access this
+  throw new Error('Super Admin permissions not available');
 }
 
 export function canAccessSchoolData(userRole: string, userSchoolId: string, targetSchoolId: string): boolean {
-  // Super Admin can access any school's data (aggregated)
-  if (userRole === 'SUPER_ADMIN') {
-    return true;
-  }
-
   // Admin can only access their own school's data
-  if (userRole === 'ADMIN') {
+  if (userRole === UserRole.ADMIN) {
     return userSchoolId === targetSchoolId;
   }
 
@@ -57,18 +49,14 @@ export function canAccessSchoolData(userRole: string, userSchoolId: string, targ
 }
 
 export function shouldShowAggregatedView(userRole: string): boolean {
-  return userRole === 'SUPER_ADMIN';
+  return false; // No aggregated view without SUPER_ADMIN
 }
 
 export function getMetricsCacheKey(userRole: string, schoolId?: string): string {
-  if (userRole === 'SUPER_ADMIN') {
-    return 'dashboard:metrics:super-admin';
-  }
-
   return `dashboard:metrics:school:${schoolId}`;
 }
 
 export function getRateLimitKey(userId: string, userRole: string): string {
-  const rolePrefix = userRole === 'SUPER_ADMIN' ? 'super-admin' : 'admin';
+  const rolePrefix = userRole === UserRole.ADMIN ? 'admin' : 'user';
   return `rate-limit:dashboard:${rolePrefix}:${userId}`;
 }

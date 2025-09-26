@@ -3,6 +3,7 @@ import { db } from '@/lib/db/drizzle';
 import { teams, users, children, families, securityAlerts, teamMembers } from '@/lib/db/schema';
 import { count, sum, avg, eq, gte, and } from 'drizzle-orm';
 import type { AggregatedMetrics, AlertSeverity, SubscriptionTier } from '@/lib/types/dashboard';
+import { UserRole } from '@/lib/constants/user-roles';
 
 export async function getSuperAdminMetrics(): Promise<AggregatedMetrics> {
   try {
@@ -26,7 +27,7 @@ export async function getSuperAdminMetrics(): Promise<AggregatedMetrics> {
       .select({ count: count() })
       .from(teamMembers)
       .leftJoin(users, eq(users.id, teamMembers.userId))
-      .where(eq(users.role, 'teacher'));
+      .where(eq(users.role, UserRole.TEACHER));
 
     const totalTeachers = totalTeachersQuery[0]?.count || 0;
 
