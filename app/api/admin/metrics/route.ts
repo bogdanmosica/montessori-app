@@ -7,14 +7,13 @@ import { getSuperAdminMetrics } from '@/app/admin/dashboard/server/super-admin-m
 import { requireAdminPermissions, shouldShowAggregatedView, getMetricsCacheKey } from '@/lib/auth/dashboard-context';
 import { RATE_LIMITS, DASHBOARD_CACHE_TTL } from '@/app/admin/dashboard/constants';
 import type { DashboardApiResponse } from '@/lib/types/dashboard';
+import { UserRole } from '@/lib/constants/user-roles';
 
 // Rate limiting store (in production, use Redis or similar)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
 function checkRateLimit(userId: string, userRole: string): boolean {
-  const limit = userRole === 'SUPER_ADMIN'
-    ? RATE_LIMITS.SUPER_ADMIN_REQUESTS_PER_MINUTE
-    : RATE_LIMITS.ADMIN_REQUESTS_PER_MINUTE;
+  const limit = RATE_LIMITS.ADMIN_REQUESTS_PER_MINUTE;
 
   const key = `rate_limit_${userId}`;
   const now = Date.now();

@@ -1,6 +1,6 @@
 // T013: Create capacity utilization helpers
 import { db } from '@/lib/db/drizzle';
-import { children, families, schoolSettings, applications } from '@/lib/db/schema';
+import { children, schoolSettings, applications } from '@/lib/db/schema';
 import { eq, and, count, sql } from 'drizzle-orm';
 import type { AgeGroupCapacity } from '@/lib/types/dashboard';
 import { DEFAULT_AGE_GROUPS } from '../constants';
@@ -41,10 +41,9 @@ export async function getCapacityMetrics(schoolId: string) {
     const activeEnrollments = await db
       .select({ count: count() })
       .from(children)
-      .leftJoin(families, eq(families.id, children.familyId))
       .where(and(
-        eq(families.schoolId, parseInt(schoolId)),
-        eq(children.enrollmentStatus, 'enrolled')
+        eq(children.schoolId, parseInt(schoolId)),
+        eq(children.enrollmentStatus, 'ACTIVE')
       ));
 
     const activeEnrollmentCount = activeEnrollments[0]?.count || 0;
@@ -59,7 +58,7 @@ export async function getCapacityMetrics(schoolId: string) {
       .from(applications)
       .where(and(
         eq(applications.schoolId, parseInt(schoolId)),
-        eq(applications.status, 'pending')
+        eq(applications.status, 'PENDING')
       ));
 
     return {
@@ -86,10 +85,9 @@ async function getCapacityByAgeGroup(
     const enrollmentsByAge = await db
       .select({ count: count() })
       .from(children)
-      .leftJoin(families, eq(families.id, children.familyId))
       .where(and(
-        eq(families.schoolId, parseInt(schoolId)),
-        eq(children.enrollmentStatus, 'enrolled'),
+        eq(children.schoolId, parseInt(schoolId)),
+        eq(children.enrollmentStatus, 'ACTIVE'),
         sql`EXTRACT(YEAR FROM age(${children.dateOfBirth})) * 12 + EXTRACT(MONTH FROM age(${children.dateOfBirth})) BETWEEN ${ageGroup.minAge} AND ${ageGroup.maxAge}`
       ));
 
@@ -174,10 +172,9 @@ export async function getWaitlistMetrics(schoolId: string) {
     const totalWaitlisted = await db
       .select({ count: count() })
       .from(children)
-      .leftJoin(families, eq(families.id, children.familyId))
       .where(and(
-        eq(families.schoolId, parseInt(schoolId)),
-        eq(children.enrollmentStatus, 'waitlisted')
+        eq(children.schoolId, parseInt(schoolId)),
+        eq(children.enrollmentStatus, 'WAITLISTED')
       ));
 
     const totalWaitlistedCount = totalWaitlisted[0]?.count || 0;
@@ -206,10 +203,9 @@ export async function getWaitlistMetrics(schoolId: string) {
       const waitlistedByAge = await db
         .select({ count: count() })
         .from(children)
-        .leftJoin(families, eq(families.id, children.familyId))
         .where(and(
-          eq(families.schoolId, parseInt(schoolId)),
-          eq(children.enrollmentStatus, 'waitlisted'),
+          eq(children.schoolId, parseInt(schoolId)),
+          eq(children.enrollmentStatus, 'WAITLISTED'),
           sql`EXTRACT(YEAR FROM age(${children.dateOfBirth})) * 12 + EXTRACT(MONTH FROM age(${children.dateOfBirth})) BETWEEN ${ageGroup.minAge} AND ${ageGroup.maxAge}`
         ));
 

@@ -13,6 +13,7 @@ import { customerPortalAction } from '@/lib/payments/actions';
 import { useActionState } from 'react';
 import { TeamDataWithMembers, User } from '@/lib/db/schema';
 import { removeTeamMember, inviteTeamMember } from '@/app/(login)/actions';
+import { UserRole } from '@/lib/constants/user-roles';
 import useSWR from 'swr';
 import { Suspense } from 'react';
 import { Input } from '@/components/ui/input';
@@ -189,7 +190,7 @@ function InviteTeamMemberSkeleton() {
 
 function InviteTeamMember() {
   const { data: user } = useSWR<User>('/api/user', fetcher);
-  const isOwner = user?.role === 'admin'; // Updated to use admin role
+  const isOwner = user?.role === UserRole.ADMIN;
   const [inviteState, inviteAction, isInvitePending] = useActionState<
     ActionState,
     FormData
