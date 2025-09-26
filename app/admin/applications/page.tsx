@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Users, FileText, Clock } from 'lucide-react';
 import Link from 'next/link';
+import AdminNavigation from '@/components/admin/admin-navigation';
 
 interface ApplicationsPageProps {
   searchParams: Promise<{
@@ -31,6 +32,7 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
 
   return (
     <div className="min-h-screen bg-gray-50/30">
+      <AdminNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="space-y-6">
           {/* Header */}
