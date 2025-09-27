@@ -1,5 +1,5 @@
 import { db } from '../db/drizzle';
-import { children } from '../db/schema';
+import { children, enrollments } from '../db/schema';
 import type { NewChild, Child } from '../db/schema';
 
 export interface CreateChildData {
@@ -17,7 +17,7 @@ export interface CreateChildData {
 }
 
 /**
- * Create a new child profile
+ * Create a new child profile with corresponding enrollment record
  */
 export async function createChildProfile(data: CreateChildData, tx?: any): Promise<Child> {
   const dbInstance = tx || db;
@@ -36,12 +36,32 @@ export async function createChildProfile(data: CreateChildData, tx?: any): Promi
     createdByAdminId: data.createdByAdminId,
   };
 
-  const results = await dbInstance
+  // Create the child profile first
+  const childResults = await dbInstance
     .insert(children)
     .values(childData)
     .returning();
 
-  return results[0];
+  const child = childResults[0];
+
+  // If child is ACTIVE, also create an enrollment record
+  if (data.enrollmentStatus === 'ACTIVE') {
+    await dbInstance
+      .insert(enrollments)
+      .values({
+        childId: child.id,
+        schoolId: data.schoolId,
+        status: 'active',
+        enrollmentDate: data.startDate,
+        createdBy: data.createdByAdminId,
+        updatedBy: data.createdByAdminId,
+        notes: data.applicationId ? 
+          `Created from application ${data.applicationId}` : 
+          'Created directly by admin',
+      });
+  }
+
+  return child;
 }
 
 /**

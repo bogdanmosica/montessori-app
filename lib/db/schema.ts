@@ -11,6 +11,9 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
+// Import enrollments schema
+export * from './schema/enrollments';
+
 export const userRoleEnum = pgEnum('user_role', ['parent', 'teacher', 'admin']);
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['enrolled', 'pending', 'waitlisted', 'withdrawn']);
 export const paymentStatusEnum = pgEnum('payment_status', ['current', 'pending', 'overdue', 'partial']);
@@ -160,11 +163,10 @@ export const parentChildRelationships = pgTable('parent_child_relationships', {
   childId: uuid('child_id')
     .notNull()
     .references(() => children.id),
-  status: varchar('status', { length: 20 }).notNull().default('pending'),
-  submittedAt: timestamp('submitted_at').notNull().defaultNow(),
-  reviewedAt: timestamp('reviewed_at'),
-  reviewedBy: integer('reviewed_by').references(() => users.id),
+  relationshipType: relationshipTypeEnum('relationship_type').notNull(),
   primaryContact: boolean('primary_contact').notNull().default(false),
+  pickupAuthorized: boolean('pickup_authorized').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 export const applications = pgTable('applications', {
@@ -362,6 +364,7 @@ export const childrenRelations = relations(children, ({ one, many }) => ({
     references: [users.id],
   }),
   parentRelationships: many(parentChildRelationships),
+  enrollments: many('enrollments'),
 }));
 
 export const applicationsRelations = relations(applications, ({ one, many }) => ({

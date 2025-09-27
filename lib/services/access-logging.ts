@@ -1,5 +1,6 @@
 import { db } from '../db/drizzle';
 import { adminAccessLogs } from '../db/schema';
+import { eq, and, desc } from 'drizzle-orm';
 import type { NewAdminAccessLog, AdminAccessLog } from '../db/schema';
 import type { ACCESS_LOG_ACTION, ACCESS_LOG_TARGET_TYPE } from '../constants/access-log-actions';
 
@@ -55,11 +56,13 @@ export async function getAccessLogsForTarget(
     .select()
     .from(adminAccessLogs)
     .where(
-      adminAccessLogs.targetType.eq(targetType as any) &&
-      adminAccessLogs.targetId.eq(targetId) &&
-      adminAccessLogs.schoolId.eq(schoolId)
+      and(
+        eq(adminAccessLogs.targetType, targetType as any),
+        eq(adminAccessLogs.targetId, targetId),
+        eq(adminAccessLogs.schoolId, schoolId)
+      )
     )
-    .orderBy(adminAccessLogs.timestamp.desc())
+    .orderBy(desc(adminAccessLogs.timestamp))
     .limit(limit);
 
   return results;
@@ -77,10 +80,12 @@ export async function getAccessLogsForAdmin(
     .select()
     .from(adminAccessLogs)
     .where(
-      adminAccessLogs.adminUserId.eq(adminUserId) &&
-      adminAccessLogs.schoolId.eq(schoolId)
+      and(
+        eq(adminAccessLogs.adminUserId, adminUserId),
+        eq(adminAccessLogs.schoolId, schoolId)
+      )
     )
-    .orderBy(adminAccessLogs.timestamp.desc())
+    .orderBy(desc(adminAccessLogs.timestamp))
     .limit(limit);
 
   return results;
@@ -98,8 +103,8 @@ export async function getRecentAdminActivity(
   const results = await db
     .select()
     .from(adminAccessLogs)
-    .where(adminAccessLogs.schoolId.eq(schoolId))
-    .orderBy(adminAccessLogs.timestamp.desc())
+    .where(eq(adminAccessLogs.schoolId, schoolId))
+    .orderBy(desc(adminAccessLogs.timestamp))
     .limit(limit);
 
   return results;
