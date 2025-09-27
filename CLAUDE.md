@@ -1,9 +1,9 @@
 # Claude Context: Monte SMS - Montessori School Management System
 
 ## Recent Changes
+- 006-build-the-admin: Added TypeScript (strict mode) with Next.js 15 App Router + React 19 + Drizzle ORM, Auth.js, shadcn/ui, Tailwind CSS
 - **2025-09-26**: Added reusable admin navigation bar feature (005-reuse-the-existing)
 - **Previous**: Fixed build conflicts, resolved schema issues, added admin applications page
-- **Previous**: Built admin dashboard with metrics, cashflow, and capacity tracking
 
 ## Current Project Structure
 
