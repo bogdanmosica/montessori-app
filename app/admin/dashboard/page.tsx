@@ -16,6 +16,9 @@ import EmptyState from './components/EmptyState';
 // Client Components
 import TrendsChart from './components/TrendsChart.client';
 
+// Admin Components
+import AdminNavigation from '@/components/admin/admin-navigation';
+
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -304,41 +307,6 @@ async function SchoolDashboard({ schoolId, context }: { schoolId: string; contex
             </div>
           </div>
         )}
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button asChild variant="outline" className="h-20 flex-col">
-                <Link href="/admin/applications">
-                  <Users className="h-6 w-6 mb-2" />
-                  Applications
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-20 flex-col">
-                <Link href="/admin/enrollments">
-                  <Users className="h-6 w-6 mb-2" />
-                  Enrollments
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-20 flex-col">
-                <Link href="/admin/payments">
-                  <BarChart3 className="h-6 w-6 mb-2" />
-                  Payments
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-20 flex-col">
-                <Link href="/admin/reports">
-                  <BarChart3 className="h-6 w-6 mb-2" />
-                  Reports
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   } catch (error) {
@@ -365,6 +333,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50/30">
+      <AdminNavigation />
       <div className="container mx-auto px-4 py-8">
         <Suspense fallback={<DashboardSkeleton />}>
           {context.isSuper ? (
