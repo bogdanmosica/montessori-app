@@ -1,0 +1,417 @@
+openapi: 3.0.3
+info:
+  title: Admin Reports API
+  description: API endpoints for generating and exporting admin reports
+  version: 1.0.0
+
+paths:
+  /api/admin/reports/applications:
+    get:
+      summary: Generate Applications Report
+      description: Generate a report of applications with optional filtering
+      parameters:
+        - name: startDate
+          in: query
+          description: Start date filter (ISO format)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: End date filter (ISO format)
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          description: Application status filter (comma-separated)
+          schema:
+            type: string
+        - name: format
+          in: query
+          description: Export format
+          schema:
+            type: string
+            enum: [json, csv, pdf]
+            default: json
+      responses:
+        '200':
+          description: Applications report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationsReportResponse'
+            text/csv:
+              schema:
+                type: string
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized - Admin access required
+        '400':
+          description: Invalid filter parameters
+        '500':
+          description: Internal server error
+
+  /api/admin/reports/enrollments:
+    get:
+      summary: Generate Enrollments Report
+      description: Generate a report of enrollments with optional filtering
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv, pdf]
+            default: json
+      responses:
+        '200':
+          description: Enrollments report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentsReportResponse'
+            text/csv:
+              schema:
+                type: string
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+        '400':
+          description: Invalid parameters
+        '500':
+          description: Server error
+
+  /api/admin/reports/payments:
+    get:
+      summary: Generate Payments Report  
+      description: Generate a report of payments including failed charges and refunds
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv, pdf]
+            default: json
+      responses:
+        '200':
+          description: Payments report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentsReportResponse'
+            text/csv:
+              schema:
+                type: string
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+        '400':
+          description: Invalid parameters  
+        '500':
+          description: Server error
+
+  /api/admin/reports/activity:
+    get:
+      summary: Generate Activity Report
+      description: Generate a report of school activity and access logs
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: activityType
+          in: query
+          description: Activity type filter (comma-separated)
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv, pdf]
+            default: json
+      responses:
+        '200':
+          description: Activity report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityReportResponse'
+            text/csv:
+              schema:
+                type: string
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+        '400':
+          description: Invalid parameters
+        '500':
+          description: Server error
+
+components:
+  schemas:
+    ApplicationsReportResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplicationReportRow'
+        metadata:
+          $ref: '#/components/schemas/ReportMetadata'
+        
+    EnrollmentsReportResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnrollmentReportRow'
+        metadata:
+          $ref: '#/components/schemas/ReportMetadata'
+
+    PaymentsReportResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentReportRow'
+        metadata:
+          $ref: '#/components/schemas/ReportMetadata'
+
+    ActivityReportResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityReportRow'
+        metadata:
+          $ref: '#/components/schemas/ReportMetadata'
+
+    ApplicationReportRow:
+      type: object
+      properties:
+        applicationId:
+          type: string
+        applicationDate:
+          type: string
+          format: date-time
+        childName:
+          type: string
+        childDateOfBirth:
+          type: string
+          format: date
+        parentName:
+          type: string
+        parentEmail:
+          type: string
+          format: email
+        parentPhone:
+          type: string
+        parentAddress:
+          type: string
+        applicationStatus:
+          type: string
+          enum: [submitted, under_review, approved, rejected, waitlisted]
+        submissionDate:
+          type: string
+          format: date-time
+        reviewedBy:
+          type: string
+          nullable: true
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    EnrollmentReportRow:
+      type: object
+      properties:
+        enrollmentId:
+          type: string
+        childName:
+          type: string
+        childDateOfBirth:
+          type: string
+          format: date
+        parentName:
+          type: string
+        parentEmail:
+          type: string
+          format: email
+        parentPhone:
+          type: string
+        parentAddress:
+          type: string
+        enrollmentDate:
+          type: string
+          format: date-time
+        enrollmentStatus:
+          type: string
+          enum: [active, inactive, graduated, withdrawn, suspended]
+        programType:
+          type: string
+        monthlyFee:
+          type: number
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+
+    PaymentReportRow:
+      type: object
+      properties:
+        paymentId:
+          type: string
+        parentName:
+          type: string
+        parentEmail:
+          type: string
+          format: email
+        childName:
+          type: string
+        transactionType:
+          type: string
+          enum: [payment, refund, failed_charge]
+        amount:
+          type: number
+        currency:
+          type: string
+        transactionDate:
+          type: string
+          format: date-time
+        paymentMethod:
+          type: string
+        status:
+          type: string
+          enum: [pending, completed, failed, refunded, cancelled]
+        stripeTransactionId:
+          type: string
+          nullable: true
+        failureReason:
+          type: string
+          nullable: true
+        refundReason:
+          type: string
+          nullable: true
+
+    ActivityReportRow:
+      type: object
+      properties:
+        activityId:
+          type: string
+        activityType:
+          type: string
+          enum: [login, logout, application_create, application_approve, application_reject, enrollment_create, enrollment_update, payment_process, report_generate]
+        performedBy:
+          type: string
+        performedByRole:
+          type: string
+          enum: [admin, teacher, parent]
+        targetEntity:
+          type: string
+        targetId:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        ipAddress:
+          type: string
+          nullable: true
+        userAgent:
+          type: string
+          nullable: true
+
+    ReportMetadata:
+      type: object
+      properties:
+        totalRows:
+          type: integer
+        generatedAt:
+          type: string
+          format: date-time
+        filters:
+          type: object
+          properties:
+            startDate:
+              type: string
+              format: date
+              nullable: true
+            endDate:
+              type: string
+              format: date  
+              nullable: true
+            status:
+              type: array
+              items:
+                type: string
+              nullable: true
+        tenantId:
+          type: string
+        requestedBy:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
