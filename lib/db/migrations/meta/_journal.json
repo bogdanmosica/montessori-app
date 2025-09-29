@@ -29,6 +29,13 @@
       "when": 1758817212590,
       "tag": "0003_steep_squirrel_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1759004900741,
+      "tag": "0004_romantic_madame_masque",
+      "breakpoints": true
     }
   ]
 }

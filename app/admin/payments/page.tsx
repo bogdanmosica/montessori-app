@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth/config';
 import { redirect } from 'next/navigation';
 import { requireAdminPermissions } from '@/lib/auth/dashboard-context';
 import AdminNavigation from '@/components/admin/admin-navigation';
-import PlaceholderPage from '@/components/admin/placeholder-page';
+import PaymentsDashboard from './components/payments-dashboard';
 
 export default async function PaymentsPage() {
   const session = await auth();
@@ -19,9 +19,11 @@ export default async function PaymentsPage() {
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-50/30">
       <AdminNavigation />
-      <PlaceholderPage pageName="Payments" expectedDate="Q1 2026" />
-    </>
+      <main className="container mx-auto px-4 py-8">
+        <PaymentsDashboard />
+      </main>
+    </div>
   );
 }
