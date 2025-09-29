@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { APPLICATION_STATUS, APPLICATION_STATUS_LABELS } from '@/lib/constants/application-status';
+import { ApplicationStatus, APPLICATION_STATUS_LABELS } from '@/lib/constants/application-status';
 import { CheckCircle, Clock, XCircle, GraduationCap, Pause, Users } from 'lucide-react';
 
 interface ApplicationStatusBadgeProps {
@@ -10,19 +10,19 @@ interface ApplicationStatusBadgeProps {
 export function ApplicationStatusBadge({ status, showIcon = true }: ApplicationStatusBadgeProps) {
   const getStatusConfig = (status: string) => {
     switch (status) {
-      case APPLICATION_STATUS.PENDING:
+      case ApplicationStatus.PENDING:
         return {
           variant: 'secondary' as const,
           icon: Clock,
           className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
         };
-      case APPLICATION_STATUS.APPROVED:
+      case ApplicationStatus.APPROVED:
         return {
           variant: 'default' as const,
           icon: CheckCircle,
           className: 'bg-green-100 text-green-800 hover:bg-green-100',
         };
-      case APPLICATION_STATUS.REJECTED:
+      case ApplicationStatus.REJECTED:
         return {
           variant: 'destructive' as const,
           icon: XCircle,

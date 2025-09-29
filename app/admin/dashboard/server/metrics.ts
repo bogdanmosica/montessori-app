@@ -2,6 +2,7 @@
 import { getCapacityMetrics } from './capacity-metrics';
 import { getSecurityAlerts } from './security-alerts';
 import { getTeacherActivityMetrics } from './teacher-metrics';
+import { TrendsService } from '@/lib/services/trends-service';
 import { db } from '@/lib/db';
 import { teams, schoolSettings, children, payments, families } from '@/lib/db/schema';
 import { eq, and, sum, count, gte, lt } from 'drizzle-orm';
@@ -65,7 +66,7 @@ export async function getDashboardMetrics(
       getTeacherActivityMetrics(schoolId),
       getSubscriptionStatus(schoolId),
       includeAlerts ? getSecurityAlerts(schoolId, { includeResolved: false, limit: 10 }) : [],
-      includeTrends ? getTrendData(schoolId, period) : null
+      includeTrends ? TrendsService.getTrendData(schoolId, period) : null
     ]);
 
     // Combine all metrics
@@ -149,18 +150,26 @@ function getTierLimit(planName: string): number {
   }
 }
 
-async function getTrendData(
+
+
+export async function validateSchoolAccess(schoolId: string, userSchoolId?: string, userRole?: string): Promise<boolean> {
+  // Regular admin can only access their own school
+  if (userRole === UserRole.ADMIN) {
+    return schoolId === userSchoolId;
+  }
+
+  return false;
+}
+
+async function getMockTrendDataWithRealCalculations(
   schoolId: string,
   period: 'week' | 'month' | 'quarter'
 ): Promise<TrendData> {
   try {
     const days = period === 'week' ? 7 : period === 'month' ? 30 : 90;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    // For demo purposes, generate sample trend data
-    // In production, this would query historical data tables
     const dataPoints: TrendDataPoint[] = [];
+    
+    // Get current metrics to base trends on
     const currentMetrics = await getDashboardMetrics(schoolId, {
       includeAlerts: false,
       includeTrends: false
@@ -170,45 +179,53 @@ async function getTrendData(
       const date = new Date();
       date.setDate(date.getDate() - i);
 
-      // Generate realistic trend data with some variation
+      // Create realistic trend data with meaningful progression
+      const dayFactor = (days - i) / days; // 0 to 1 progression
       const baseApplications = currentMetrics.metrics.pendingApplications;
       const baseEnrollments = currentMetrics.metrics.activeEnrollments;
-      const baseEngagement = currentMetrics.metrics.teacherActivity.activeTeachers > 0
-        ? (currentMetrics.metrics.teacherActivity.activeTeachers / currentMetrics.metrics.teacherActivity.totalTeachers) * 100
-        : 75;
       const baseRevenue = currentMetrics.metrics.cashflowMetrics.currentMonthRevenue;
-      const baseCapacity = currentMetrics.metrics.capacityUtilization;
-
+      
       dataPoints.push({
         date,
-        applications: Math.max(0, baseApplications + Math.floor(Math.random() * 6) - 3),
-        enrollments: Math.max(0, baseEnrollments + Math.floor(Math.random() * 4) - 2),
-        teacherEngagement: Math.max(0, baseEngagement + Math.floor(Math.random() * 20) - 10),
-        revenue: Math.max(0, baseRevenue + (Math.random() * 1000) - 500),
-        capacityUtilization: Math.max(0, baseCapacity + (Math.random() * 10) - 5),
+        applications: Math.round(Math.max(0, dayFactor * baseApplications + Math.random() * 2)),
+        enrollments: Math.round(Math.max(0, dayFactor * baseEnrollments + Math.random() * 1)),
+        teacherEngagement: Math.round(70 + dayFactor * 25 + Math.random() * 10),
+        revenue: Math.round(dayFactor * baseRevenue + Math.random() * 200),
+        capacityUtilization: Math.round(Math.max(0, currentMetrics.metrics.capacityUtilization + (Math.random() - 0.5) * 5)),
       });
     }
 
-    // Calculate percentage changes
-    const firstPoint = dataPoints[0];
-    const lastPoint = dataPoints[dataPoints.length - 1];
+    // Calculate trends with improvement
+    const firstHalf = dataPoints.slice(0, Math.floor(days / 2));
+    const secondHalf = dataPoints.slice(Math.floor(days / 2));
+    
+    const calculateTrend = (first: number[], second: number[]): number => {
+      const firstAvg = first.reduce((a, b) => a + b, 0) / first.length || 1;
+      const secondAvg = second.reduce((a, b) => a + b, 0) / second.length || 1;
+      return ((secondAvg - firstAvg) / firstAvg) * 100;
+    };
 
     const trends = {
-      applicationsChange: firstPoint.applications > 0
-        ? ((lastPoint.applications - firstPoint.applications) / firstPoint.applications) * 100
-        : 0,
-      enrollmentsChange: firstPoint.enrollments > 0
-        ? ((lastPoint.enrollments - firstPoint.enrollments) / firstPoint.enrollments) * 100
-        : 0,
-      engagementChange: firstPoint.teacherEngagement > 0
-        ? ((lastPoint.teacherEngagement - firstPoint.teacherEngagement) / firstPoint.teacherEngagement) * 100
-        : 0,
-      revenueChange: firstPoint.revenue > 0
-        ? ((lastPoint.revenue - firstPoint.revenue) / firstPoint.revenue) * 100
-        : 0,
-      capacityChange: firstPoint.capacityUtilization > 0
-        ? ((lastPoint.capacityUtilization - firstPoint.capacityUtilization) / firstPoint.capacityUtilization) * 100
-        : 0,
+      applicationsChange: calculateTrend(
+        firstHalf.map(p => p.applications), 
+        secondHalf.map(p => p.applications)
+      ),
+      enrollmentsChange: calculateTrend(
+        firstHalf.map(p => p.enrollments), 
+        secondHalf.map(p => p.enrollments)
+      ),
+      engagementChange: calculateTrend(
+        firstHalf.map(p => p.teacherEngagement), 
+        secondHalf.map(p => p.teacherEngagement)
+      ),
+      revenueChange: calculateTrend(
+        firstHalf.map(p => p.revenue), 
+        secondHalf.map(p => p.revenue)
+      ),
+      capacityChange: calculateTrend(
+        firstHalf.map(p => p.capacityUtilization), 
+        secondHalf.map(p => p.capacityUtilization)
+      ),
     };
 
     return {
@@ -217,8 +234,7 @@ async function getTrendData(
       trends,
     };
   } catch (error) {
-    console.error('Error getting trend data:', error);
-    // Return empty trend data on error
+    console.error('Error getting mock trend data:', error);
     return {
       period,
       dataPoints: [],
@@ -231,15 +247,6 @@ async function getTrendData(
       },
     };
   }
-}
-
-export async function validateSchoolAccess(schoolId: string, userSchoolId?: string, userRole?: string): Promise<boolean> {
-  // Regular admin can only access their own school
-  if (userRole === UserRole.ADMIN) {
-    return schoolId === userSchoolId;
-  }
-
-  return false;
 }
 
 async function calculateCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {

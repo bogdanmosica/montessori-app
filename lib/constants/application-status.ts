@@ -1,19 +1,16 @@
-export const APPLICATION_STATUS = {
-  PENDING: 'PENDING',
-  APPROVED: 'APPROVED',
-  REJECTED: 'REJECTED',
-} as const;
+export enum ApplicationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED'
+}
 
-export type ApplicationStatus = typeof APPLICATION_STATUS[keyof typeof APPLICATION_STATUS];
+export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
+  [ApplicationStatus.PENDING]: 'Pending',
+  [ApplicationStatus.APPROVED]: 'Approved',
+  [ApplicationStatus.REJECTED]: 'Rejected'
+};
 
-export const APPLICATION_STATUS_LABELS = {
-  [APPLICATION_STATUS.PENDING]: 'Pending Review',
-  [APPLICATION_STATUS.APPROVED]: 'Approved',
-  [APPLICATION_STATUS.REJECTED]: 'Rejected',
-} as const;
-
-export const APPLICATION_STATUS_OPTIONS = [
-  { value: APPLICATION_STATUS.PENDING, label: APPLICATION_STATUS_LABELS[APPLICATION_STATUS.PENDING] },
-  { value: APPLICATION_STATUS.APPROVED, label: APPLICATION_STATUS_LABELS[APPLICATION_STATUS.APPROVED] },
-  { value: APPLICATION_STATUS.REJECTED, label: APPLICATION_STATUS_LABELS[APPLICATION_STATUS.REJECTED] },
-] as const;
+export const APPLICATION_STATUS_OPTIONS = Object.values(ApplicationStatus).map(status => ({
+  value: status,
+  label: APPLICATION_STATUS_LABELS[status]
+}));
