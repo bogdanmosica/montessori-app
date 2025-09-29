@@ -1,12 +1,11 @@
 // T016: Create consolidated metrics service
-// import { getCashflowMetrics } from './cashflow-metrics'; // Temporarily disabled
 import { getCapacityMetrics } from './capacity-metrics';
 import { getSecurityAlerts } from './security-alerts';
 import { getTeacherActivityMetrics } from './teacher-metrics';
-import { db } from '@/lib/db/drizzle';
-import { teams, schoolSettings, subscriptionTierEnum, subscriptionStateEnum } from '@/lib/db/schema';
-import { eq, count, sum } from 'drizzle-orm';
-import type { DashboardMetrics, TrendData, TrendDataPoint } from '@/lib/types/dashboard';
+import { db } from '@/lib/db';
+import { teams, schoolSettings, children, payments, families } from '@/lib/db/schema';
+import { eq, and, sum, count, gte, lt } from 'drizzle-orm';
+import type { DashboardMetrics, TrendData, TrendDataPoint, CashflowMetrics, RevenueBreakdown } from '@/lib/types/dashboard';
 import { UserRole } from '@/lib/constants/user-roles';
 
 export async function getDashboardMetrics(
@@ -53,22 +52,8 @@ export async function getDashboardMetrics(
     // Get capacity metrics first
     const capacityMetrics = await getCapacityMetrics(schoolId);
 
-    // Simple cashflow metrics calculation
-    const cashflowMetrics = {
-      currentMonthRevenue: 0,
-      projectedMonthlyRevenue: 0,
-      baseFeePerChild: 65000,
-      totalFamilies: 0,
-      totalChildren: capacityMetrics.activeEnrollments,
-      averageRevenuePerFamily: 0,
-      discountsSavings: 0,
-      revenueBreakdown: {
-        singleChildFamilies: { count: 0, revenue: 0 },
-        multiChildFamilies: { count: 0, revenue: 0, totalSavingsFromDiscounts: 0 },
-        pendingPayments: 0,
-        overduePayments: 0,
-      },
-    };
+    // Get real cashflow metrics using actual database data
+    const cashflowMetrics = await calculateCashflowMetrics(schoolId);
 
     // Get remaining metrics in parallel
     const [
@@ -133,7 +118,7 @@ async function getSubscriptionStatus(schoolId: string) {
       nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       studentsUsed: capacityMetrics.activeEnrollments,
       studentsLimit: getTierLimit(schoolData[0].planName || 'premium'),
-      daysUntilExpiry: null,
+      daysUntilExpiry: undefined,
     };
 
     return subscriptionStatus;
@@ -146,7 +131,7 @@ async function getSubscriptionStatus(schoolId: string) {
       nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       studentsUsed: 0,
       studentsLimit: 200,
-      daysUntilExpiry: null,
+      daysUntilExpiry: undefined,
     };
   }
 }
@@ -255,4 +240,98 @@ export async function validateSchoolAccess(schoolId: string, userSchoolId?: stri
   }
 
   return false;
+}
+
+async function calculateCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {
+  try {
+    console.log('🔄 Calculating real cashflow metrics for school:', schoolId);
+    // Get school settings for base fee
+    const schoolSettingsData = await db
+      .select()
+      .from(schoolSettings)
+      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))
+      .limit(1);
+
+    const baseFeePerChild = schoolSettingsData[0]?.baseFeePerChild || 65000; // cents
+
+    // Get all children with their actual monthly fees
+    const childrenWithFees = await db
+      .select({
+        id: children.id,
+        monthlyFee: children.monthlyFee,
+        enrollmentStatus: children.enrollmentStatus,
+      })
+      .from(children)
+      .where(and(
+        eq(children.schoolId, parseInt(schoolId)),
+        eq(children.enrollmentStatus, 'ACTIVE')
+      ));
+
+    const totalChildren = childrenWithFees.length;
+
+    // Calculate current monthly revenue from actual child fees
+    const currentMonthRevenue = childrenWithFees.reduce((sum, child) => {
+      return sum + (child.monthlyFee || 0);
+    }, 0);
+
+    // Estimate families (assuming average of 1.5 children per family)
+    const estimatedFamilies = Math.max(1, Math.round(totalChildren / 1.5));
+
+    // Calculate average revenue per family
+    const averageRevenuePerFamily = estimatedFamilies > 0 ? currentMonthRevenue / estimatedFamilies : 0;
+
+    // Calculate discounts savings (difference between full price and actual fees)
+    const fullPriceRevenue = totalChildren * baseFeePerChild;
+    const discountsSavings = Math.max(0, fullPriceRevenue - currentMonthRevenue);
+
+    // Estimate single vs multi-child families based on discounts
+    const averageFeePerChild = totalChildren > 0 ? currentMonthRevenue / totalChildren : baseFeePerChild;
+    const discountPerChild = baseFeePerChild - averageFeePerChild;
+    const estimatedMultiChildFamilies = Math.round((discountPerChild * totalChildren) / (baseFeePerChild * 0.2)); // Assume 20% discount
+    const estimatedSingleChildFamilies = Math.max(0, estimatedFamilies - estimatedMultiChildFamilies);
+
+    const revenueBreakdown: RevenueBreakdown = {
+      singleChildFamilies: {
+        count: estimatedSingleChildFamilies,
+        revenue: (estimatedSingleChildFamilies * baseFeePerChild) / 100, // Convert to dollars
+      },
+      multiChildFamilies: {
+        count: estimatedMultiChildFamilies,
+        revenue: (currentMonthRevenue - (estimatedSingleChildFamilies * baseFeePerChild)) / 100, // Convert to dollars
+        totalSavingsFromDiscounts: discountsSavings / 100, // Convert to dollars
+      },
+      pendingPayments: 0, // TODO: Calculate based on payment status
+      overduePayments: 0, // TODO: Calculate based on payment due dates
+    };
+
+    return {
+      currentMonthRevenue: currentMonthRevenue / 100, // Convert cents to dollars
+      projectedMonthlyRevenue: currentMonthRevenue / 100, // Same as current for now
+      baseFeePerChild: baseFeePerChild / 100, // Convert to dollars
+      totalFamilies: estimatedFamilies,
+      totalChildren,
+      averageRevenuePerFamily: Math.round(averageRevenuePerFamily) / 100, // Convert to dollars
+      discountsSavings: discountsSavings / 100, // Convert to dollars
+      revenueBreakdown,
+    };
+  } catch (error) {
+    console.error('Error calculating cashflow metrics:', error);
+
+    // Return default values on error
+    return {
+      currentMonthRevenue: 0,
+      projectedMonthlyRevenue: 0,
+      baseFeePerChild: 650, // $650 in dollars
+      totalFamilies: 0,
+      totalChildren: 0,
+      averageRevenuePerFamily: 0,
+      discountsSavings: 0,
+      revenueBreakdown: {
+        singleChildFamilies: { count: 0, revenue: 0 },
+        multiChildFamilies: { count: 0, revenue: 0, totalSavingsFromDiscounts: 0 },
+        pendingPayments: 0,
+        overduePayments: 0,
+      },
+    };
+  }
 }

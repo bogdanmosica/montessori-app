@@ -1,20 +1,20 @@
-// Simple cashflow metrics calculation// T012: Create cashflow calculation helpers - Fixed for current schema// T012: Create cashflow calculation helpers - Fixed for current schema
+// T012: Create cashflow calculation helpers - Using real database data// Simple cashflow metrics calculation// T012: Create cashflow calculation helpers - Fixed for current schema// T012: Create cashflow calculation helpers - Fixed for current schema
 
-import { db } from '@/lib/db/drizzle';
+import { db } from '@/lib/db';
 
-import { children, schoolSettings } from '@/lib/db/schema';import { db } from '@/lib/db/drizzle';import { db } from '@/lib/db/drizzle';
+import { children, payments, schoolSettings, families } from '@/lib/db/schema';import { db } from '@/lib/db/drizzle';
 
-import { eq, and, count } from 'drizzle-orm';
+import { eq, and, sum, count, gte, lt } from 'drizzle-orm';
 
-import type { CashflowMetrics } from '@/lib/types/dashboard';import { children, payments, schoolSettings, families } from '@/lib/db/schema';import { children, payments, schoolSettings, families } from '@/lib/db/schema';
+import type { CashflowMetrics, RevenueBreakdown } from '@/lib/types/dashboard';import { children, schoolSettings } from '@/lib/db/schema';import { db } from '@/lib/db/drizzle';import { db } from '@/lib/db/drizzle';
 
 
 
-export async function getCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {import { eq, and, sum, count, gte, lt } from 'drizzle-orm';import { eq, and, sum, count, gte, lt } from 'drizzle-orm';
+export async function getCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {import { eq, and, count } from 'drizzle-orm';
 
   try {
 
-    // Get school settings for base feeimport type { CashflowMetrics, RevenueBreakdown } from '@/lib/types/dashboard';import type { CashflowMetrics, RevenueBreakdown } from '@/lib/types/dashboard';
+    // Get school settings for base feeimport type { CashflowMetrics } from '@/lib/types/dashboard';import { children, payments, schoolSettings, families } from '@/lib/db/schema';import { children, payments, schoolSettings, families } from '@/lib/db/schema';
 
     const schoolSettingsData = await db
 
@@ -22,116 +22,249 @@ export async function getCashflowMetrics(schoolId: string): Promise<CashflowMetr
 
       .from(schoolSettings)
 
-      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))export async function getCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {export async function getCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {
+      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))export async function getCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {import { eq, and, sum, count, gte, lt } from 'drizzle-orm';import { eq, and, sum, count, gte, lt } from 'drizzle-orm';
 
       .limit(1);
 
-  try {  try {
+  try {
 
     const baseFeePerChild = schoolSettingsData[0]?.baseFeePerChild || 65000; // cents
 
+    // Get school settings for base feeimport type { CashflowMetrics, RevenueBreakdown } from '@/lib/types/dashboard';import type { CashflowMetrics, RevenueBreakdown } from '@/lib/types/dashboard';
+
+    // Get all children with their actual monthly fees and families
+
+    const childrenWithFamilies = await db    const schoolSettingsData = await db
+
+      .select({
+
+        childId: children.id,      .select()
+
+        familyId: children.familyId,
+
+        monthlyFee: children.monthlyFee,      .from(schoolSettings)
+
+        enrollmentStatus: children.enrollmentStatus,
+
+      })      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))export async function getCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {export async function getCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {
+
+      .from(children)
+
+      .where(and(      .limit(1);
+
+        eq(children.schoolId, parseInt(schoolId)),
+
+        eq(children.enrollmentStatus, 'ACTIVE')  try {  try {
+
+      ));
+
+    const baseFeePerChild = schoolSettingsData[0]?.baseFeePerChild || 65000; // cents
+
+    const totalChildren = childrenWithFamilies.length;
+
     // Get school settings for base fee    // Get school settings for base fee
 
-    // Get active children count
+    // Calculate current monthly revenue from actual child fees
 
-    const activeChildren = await db    const schoolSettingsData = await db    const schoolSettingsData = await db
+    const currentMonthRevenue = childrenWithFamilies.reduce((sum, child) => {    // Get active children count
 
-      .select({ count: count() })
+      return sum + (child.monthlyFee || 0);
 
-      .from(children)      .select()      .select()
+    }, 0);    const activeChildren = await db    const schoolSettingsData = await db    const schoolSettingsData = await db
+
+
+
+    // Get unique families      .select({ count: count() })
+
+    const uniqueFamilyIds = [...new Set(childrenWithFamilies.map(c => c.familyId))];
+
+    const totalFamilies = uniqueFamilyIds.length;      .from(children)      .select()      .select()
+
+
+
+    // Get current month payment data      .where(and(
+
+    const currentMonth = new Date();
+
+    currentMonth.setDate(1);        eq(children.schoolId, parseInt(schoolId)),      .from(schoolSettings)      .from(schoolSettings)
+
+    const nextMonth = new Date(currentMonth);
+
+    nextMonth.setMonth(nextMonth.getMonth() + 1);        eq(children.enrollmentStatus, 'ACTIVE')
+
+
+
+    const currentMonthPayments = await db      ));      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))
+
+      .select({
+
+        total: sum(payments.amount),
+
+        count: count(payments.id)
+
+      })    const totalChildren = activeChildren[0]?.count || 0;      .limit(1);      .limit(1);
+
+      .from(payments)
+
+      .leftJoin(families, eq(families.id, payments.familyId))    const estimatedMonthlyRevenue = totalChildren * baseFeePerChild;
 
       .where(and(
 
-        eq(children.schoolId, parseInt(schoolId)),      .from(schoolSettings)      .from(schoolSettings)
+        eq(families.schoolId, parseInt(schoolId)),
 
-        eq(children.enrollmentStatus, 'ACTIVE')
+        gte(payments.paymentDate, currentMonth),
 
-      ));      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))
+        lt(payments.paymentDate, nextMonth)    return {
 
-
-
-    const totalChildren = activeChildren[0]?.count || 0;      .limit(1);      .limit(1);
-
-    const estimatedMonthlyRevenue = totalChildren * baseFeePerChild;
-
-
-
-    return {
+      ));
 
       currentMonthRevenue: estimatedMonthlyRevenue,    const baseFeePerChild = schoolSettingsData[0]?.baseFeePerChild || 65000; // cents    const baseFeePerChild = schoolSettingsData[0]?.baseFeePerChild || 65000; // cents
 
+    const actualPaymentsReceived = Number(currentMonthPayments[0]?.total || 0);
+
       projectedMonthlyRevenue: estimatedMonthlyRevenue,
 
-      baseFeePerChild,
+    // Calculate revenue breakdown by family size
 
-      totalFamilies: Math.ceil(totalChildren * 0.8), // Estimate
+    const familyRevenueCounts: { [key: string]: { count: number; revenue: number } } = {};      baseFeePerChild,
 
-      totalChildren,    // Get active children count    // Get active children count
+
+
+    for (const familyId of uniqueFamilyIds) {      totalFamilies: Math.ceil(totalChildren * 0.8), // Estimate
+
+      const familyChildren = childrenWithFamilies.filter(c => c.familyId === familyId);
+
+      const familyRevenue = familyChildren.reduce((sum, child) => sum + (child.monthlyFee || 0), 0);      totalChildren,    // Get active children count    // Get active children count
+
+      const childCount = familyChildren.length;
 
       averageRevenuePerFamily: Math.round(estimatedMonthlyRevenue / Math.max(1, Math.ceil(totalChildren * 0.8))),
 
-      discountsSavings: 0,    const activeChildren = await db    const activeChildren = await db
+      const key = childCount === 1 ? 'single' : 'multi';
 
-      revenueBreakdown: {
+      if (!familyRevenueCounts[key]) {      discountsSavings: 0,    const activeChildren = await db    const activeChildren = await db
 
-        singleChildFamilies: { count: totalChildren, revenue: estimatedMonthlyRevenue },      .select({ count: count() })      .select({ count: count() })
+        familyRevenueCounts[key] = { count: 0, revenue: 0 };
+
+      }      revenueBreakdown: {
+
+      familyRevenueCounts[key].count++;
+
+      familyRevenueCounts[key].revenue += familyRevenue;        singleChildFamilies: { count: totalChildren, revenue: estimatedMonthlyRevenue },      .select({ count: count() })      .select({ count: count() })
+
+    }
 
         multiChildFamilies: { count: 0, revenue: 0, totalSavingsFromDiscounts: 0 },
 
-        pendingPayments: 0,      .from(children)      .from(children)
+    // Calculate average revenue per family
 
-        overduePayments: 0,
+    const averageRevenuePerFamily = totalFamilies > 0 ? currentMonthRevenue / totalFamilies : 0;        pendingPayments: 0,      .from(children)      .from(children)
 
-      },      .where(and(      .where(and(
 
-    };
+
+    // Calculate discounts savings (difference between full price and actual fees)        overduePayments: 0,
+
+    const fullPriceRevenue = totalChildren * baseFeePerChild;
+
+    const discountsSavings = Math.max(0, fullPriceRevenue - currentMonthRevenue);      },      .where(and(      .where(and(
+
+
+
+    // Calculate pending/overdue amounts    };
+
+    const pendingAmount = Math.max(0, currentMonthRevenue - actualPaymentsReceived);
 
   } catch (error) {        eq(children.schoolId, parseInt(schoolId)),        eq(children.schoolId, parseInt(schoolId)),
 
-    console.error('Error calculating cashflow metrics:', error);
+    const revenueBreakdown: RevenueBreakdown = {
 
-            eq(children.enrollmentStatus, 'ACTIVE')        eq(children.enrollmentStatus, 'ACTIVE')
+      singleChildFamilies: {    console.error('Error calculating cashflow metrics:', error);
 
-    return {
+        count: familyRevenueCounts.single?.count || 0,
 
-      currentMonthRevenue: 0,      ));      ));
-
-      projectedMonthlyRevenue: 0,
-
-      baseFeePerChild: 65000,
-
-      totalFamilies: 0,
-
-      totalChildren: 0,    const totalChildren = activeChildren[0]?.count || 0;    const totalChildren = activeChildren[0]?.count || 0;
-
-      averageRevenuePerFamily: 0,
-
-      discountsSavings: 0,
-
-      revenueBreakdown: {
-
-        singleChildFamilies: { count: 0, revenue: 0 },    // Calculate estimated revenue based on active children    // Calculate estimated revenue based on active children
-
-        multiChildFamilies: { count: 0, revenue: 0, totalSavingsFromDiscounts: 0 },
-
-        pendingPayments: 0,    const estimatedMonthlyRevenue = totalChildren * baseFeePerChild;    const estimatedMonthlyRevenue = totalChildren * baseFeePerChild;
-
-        overduePayments: 0,
+        revenue: (familyRevenueCounts.single?.revenue || 0) / 100, // Convert to dollars            eq(children.enrollmentStatus, 'ACTIVE')        eq(children.enrollmentStatus, 'ACTIVE')
 
       },
 
+      multiChildFamilies: {    return {
+
+        count: familyRevenueCounts.multi?.count || 0,
+
+        revenue: (familyRevenueCounts.multi?.revenue || 0) / 100, // Convert to dollars      currentMonthRevenue: 0,      ));      ));
+
+        totalSavingsFromDiscounts: discountsSavings / 100, // Convert to dollars
+
+      },      projectedMonthlyRevenue: 0,
+
+      pendingPayments: pendingAmount / 100, // Convert to dollars
+
+      overduePayments: 0, // TODO: Calculate based on payment due dates      baseFeePerChild: 65000,
+
     };
 
-  }    // Get payment data if available    // Get payment data if available
+      totalFamilies: 0,
 
-}
-    const currentMonth = new Date();    const currentMonth = new Date();
+    return {
 
-    currentMonth.setDate(1); // First day of current month    currentMonth.setDate(1); // First day of current month
+      currentMonthRevenue: currentMonthRevenue / 100, // Convert cents to dollars      totalChildren: 0,    const totalChildren = activeChildren[0]?.count || 0;    const totalChildren = activeChildren[0]?.count || 0;
 
-    const nextMonth = new Date(currentMonth);    const nextMonth = new Date(currentMonth);
+      projectedMonthlyRevenue: currentMonthRevenue / 100, // Same as current for now
 
-    nextMonth.setMonth(nextMonth.getMonth() + 1);    nextMonth.setMonth(nextMonth.getMonth() + 1);
+      baseFeePerChild: baseFeePerChild / 100, // Convert to dollars      averageRevenuePerFamily: 0,
+
+      totalFamilies,
+
+      totalChildren,      discountsSavings: 0,
+
+      averageRevenuePerFamily: Math.round(averageRevenuePerFamily) / 100, // Convert to dollars
+
+      discountsSavings: discountsSavings / 100, // Convert to dollars      revenueBreakdown: {
+
+      revenueBreakdown,
+
+    };        singleChildFamilies: { count: 0, revenue: 0 },    // Calculate estimated revenue based on active children    // Calculate estimated revenue based on active children
+
+  } catch (error) {
+
+    console.error('Error calculating cashflow metrics:', error);        multiChildFamilies: { count: 0, revenue: 0, totalSavingsFromDiscounts: 0 },
+
+
+
+    // Return default values on error        pendingPayments: 0,    const estimatedMonthlyRevenue = totalChildren * baseFeePerChild;    const estimatedMonthlyRevenue = totalChildren * baseFeePerChild;
+
+    return {
+
+      currentMonthRevenue: 0,        overduePayments: 0,
+
+      projectedMonthlyRevenue: 0,
+
+      baseFeePerChild: 650, // $650 in dollars      },
+
+      totalFamilies: 0,
+
+      totalChildren: 0,    };
+
+      averageRevenuePerFamily: 0,
+
+      discountsSavings: 0,  }    // Get payment data if available    // Get payment data if available
+
+      revenueBreakdown: {
+
+        singleChildFamilies: { count: 0, revenue: 0 },}
+
+        multiChildFamilies: { count: 0, revenue: 0, totalSavingsFromDiscounts: 0 },    const currentMonth = new Date();    const currentMonth = new Date();
+
+        pendingPayments: 0,
+
+        overduePayments: 0,    currentMonth.setDate(1); // First day of current month    currentMonth.setDate(1); // First day of current month
+
+      },
+
+    };    const nextMonth = new Date(currentMonth);    const nextMonth = new Date(currentMonth);
+
+  }
+
+}    nextMonth.setMonth(nextMonth.getMonth() + 1);    nextMonth.setMonth(nextMonth.getMonth() + 1);
 
 
 

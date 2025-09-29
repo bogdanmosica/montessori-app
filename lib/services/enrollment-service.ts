@@ -1,4 +1,4 @@
-import { db } from '@/lib/db/drizzle';
+import { db } from '@/lib/db';
 import { enrollments, children, users } from '@/lib/db/schema';
 import { Enrollment, NewEnrollment } from '@/lib/db/schema/enrollments';
 import { eq, and, or, ilike, desc, asc, count, sql } from 'drizzle-orm';
@@ -48,9 +48,7 @@ export class EnrollmentService {
           ilike(children.firstName, searchPattern),
           ilike(children.lastName, searchPattern),
           sql`LOWER(CONCAT(${children.firstName}, ' ', ${children.lastName})) LIKE ${searchPattern}`
-          // For parent search, we'll need to join with parent relationships
-          // For now, searching in child's parent contact info if available
-        )
+        )!
       );
     }
 
