@@ -1,0 +1,811 @@
+openapi: 3.0.3
+info:
+  title: Admin Payments Management API
+  description: API for managing parent payments, invoices, and payment methods in Montessori school management system
+  version: 1.0.0
+  
+servers:
+  - url: /api/admin/payments
+    description: Admin payments API base path
+
+security:
+  - bearerAuth: []
+
+paths:
+  /dashboard:
+    get:
+      summary: Get payments dashboard overview
+      description: Retrieve payment summary, alerts, and recent activity for admin dashboard
+      operationId: getPaymentsDashboard
+      parameters:
+        - name: school_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentsDashboard'
+        '403':
+          description: Admin access required
+        '404':
+          description: School not found
+
+  /payments:
+    get:
+      summary: List payments with filtering
+      description: Get paginated list of parent payments with optional filters
+      operationId: listPayments
+      parameters:
+        - name: school_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: parent_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: child_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentStatus'
+        - name: payment_method
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentMethod'
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 10
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Payments retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentsListResponse'
+
+  /payments/{payment_id}:
+    get:
+      summary: Get payment details
+      description: Retrieve detailed information about a specific payment
+      operationId: getPaymentDetails
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: school_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetails'
+        '404':
+          description: Payment not found
+
+  /payments/{payment_id}/refund:
+    post:
+      summary: Process payment refund
+      description: Initiate a refund for a completed payment
+      operationId: refundPayment
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+      responses:
+        '200':
+          description: Refund processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundResponse'
+        '400':
+          description: Invalid refund request
+        '404':
+          description: Payment not found
+
+  /invoices:
+    get:
+      summary: List invoices
+      description: Get paginated list of invoices with optional filters
+      operationId: listInvoices
+      parameters:
+        - name: school_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: parent_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InvoiceStatus'
+        - name: due_before
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 10
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Invoices retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoicesListResponse'
+
+  /invoices/{invoice_id}:
+    get:
+      summary: Get invoice details
+      description: Retrieve detailed invoice information including line items
+      operationId: getInvoiceDetails
+      parameters:
+        - name: invoice_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: school_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invoice details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceDetails'
+
+  /invoices/{invoice_id}/download:
+    get:
+      summary: Download invoice PDF
+      description: Generate and download PDF version of invoice
+      operationId: downloadInvoicePDF
+      parameters:
+        - name: invoice_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: school_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: PDF generated successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /payment-methods:
+    get:
+      summary: List payment methods for a parent
+      description: Get all stored payment methods for a specific parent
+      operationId: listPaymentMethods
+      parameters:
+        - name: school_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: parent_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment methods retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodsResponse'
+
+  /alerts:
+    get:
+      summary: Get payment alerts
+      description: Retrieve active payment alerts requiring admin attention
+      operationId: getPaymentAlerts
+      parameters:
+        - name: school_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: severity
+          in: query
+          schema:
+            $ref: '#/components/schemas/AlertSeverity'
+        - name: is_resolved
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Alerts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertsResponse'
+
+  /alerts/{alert_id}/resolve:
+    post:
+      summary: Resolve payment alert
+      description: Mark a payment alert as resolved
+      operationId: resolvePaymentAlert
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveAlertRequest'
+      responses:
+        '200':
+          description: Alert resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertDetails'
+
+  /webhooks/stripe:
+    post:
+      summary: Handle Stripe webhooks
+      description: Process incoming Stripe webhook events for payment updates
+      operationId: handleStripeWebhook
+      security: []  # Webhook authentication via signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed successfully
+        '400':
+          description: Invalid webhook signature or payload
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PaymentsDashboard:
+      type: object
+      required:
+        - total_revenue_this_month
+        - pending_payments_count
+        - failed_payments_count
+        - active_alerts_count
+        - recent_payments
+      properties:
+        total_revenue_this_month:
+          type: number
+          format: decimal
+        pending_payments_count:
+          type: integer
+        failed_payments_count:
+          type: integer
+        active_alerts_count:
+          type: integer
+        recent_payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentSummary'
+
+    PaymentSummary:
+      type: object
+      required:
+        - id
+        - parent_name
+        - child_name
+        - amount
+        - status
+        - payment_date
+      properties:
+        id:
+          type: string
+          format: uuid
+        parent_name:
+          type: string
+        child_name:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        payment_date:
+          type: string
+          format: date-time
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethod'
+
+    PaymentDetails:
+      type: object
+      required:
+        - id
+        - school_id
+        - parent_id
+        - child_id
+        - amount
+        - currency
+        - payment_method
+        - payment_status
+        - payment_date
+      properties:
+        id:
+          type: string
+          format: uuid
+        school_id:
+          type: string
+          format: uuid
+        parent_id:
+          type: string
+          format: uuid
+        child_id:
+          type: string
+          format: uuid
+        stripe_payment_id:
+          type: string
+          nullable: true
+        amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          default: "USD"
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethod'
+        payment_status:
+          $ref: '#/components/schemas/PaymentStatus'
+        payment_date:
+          type: string
+          format: date-time
+        completed_date:
+          type: string
+          format: date-time
+          nullable: true
+        failure_reason:
+          type: string
+          nullable: true
+        description:
+          type: string
+        parent_name:
+          type: string
+        child_name:
+          type: string
+
+    PaymentsListResponse:
+      type: object
+      required:
+        - payments
+        - pagination
+      properties:
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentSummary'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    RefundRequest:
+      type: object
+      required:
+        - school_id
+        - amount
+        - reason
+      properties:
+        school_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+          description: Amount to refund in cents (partial refunds allowed)
+        reason:
+          type: string
+          description: Reason for the refund
+
+    RefundResponse:
+      type: object
+      required:
+        - refund_id
+        - status
+        - amount
+        - processing_date
+      properties:
+        refund_id:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "succeeded", "failed"]
+        amount:
+          type: number
+          format: decimal
+        processing_date:
+          type: string
+          format: date-time
+
+    InvoiceDetails:
+      type: object
+      required:
+        - id
+        - school_id
+        - parent_id
+        - invoice_number
+        - total_amount
+        - status
+        - due_date
+        - line_items
+      properties:
+        id:
+          type: string
+          format: uuid
+        school_id:
+          type: string
+          format: uuid
+        parent_id:
+          type: string
+          format: uuid
+        invoice_number:
+          type: string
+        billing_period_start:
+          type: string
+          format: date
+        billing_period_end:
+          type: string
+          format: date
+        subtotal:
+          type: number
+          format: decimal
+        tax_amount:
+          type: number
+          format: decimal
+        total_amount:
+          type: number
+          format: decimal
+        status:
+          $ref: '#/components/schemas/InvoiceStatus'
+        due_date:
+          type: string
+          format: date
+        paid_date:
+          type: string
+          format: date
+          nullable: true
+        pdf_url:
+          type: string
+          nullable: true
+        parent_name:
+          type: string
+        line_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceLineItem'
+
+    InvoiceLineItem:
+      type: object
+      required:
+        - id
+        - child_id
+        - description
+        - quantity
+        - unit_price
+        - total_price
+        - item_type
+      properties:
+        id:
+          type: string
+          format: uuid
+        child_id:
+          type: string
+          format: uuid
+        child_name:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+          format: decimal
+        total_price:
+          type: number
+          format: decimal
+        item_type:
+          $ref: '#/components/schemas/LineItemType'
+        billing_period_start:
+          type: string
+          format: date
+        billing_period_end:
+          type: string
+          format: date
+
+    InvoicesListResponse:
+      type: object
+      required:
+        - invoices
+        - pagination
+      properties:
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceSummary'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    InvoiceSummary:
+      type: object
+      required:
+        - id
+        - invoice_number
+        - parent_name
+        - total_amount
+        - status
+        - due_date
+      properties:
+        id:
+          type: string
+          format: uuid
+        invoice_number:
+          type: string
+        parent_name:
+          type: string
+        total_amount:
+          type: number
+          format: decimal
+        status:
+          $ref: '#/components/schemas/InvoiceStatus'
+        due_date:
+          type: string
+          format: date
+        paid_date:
+          type: string
+          format: date
+          nullable: true
+
+    PaymentMethodsResponse:
+      type: object
+      required:
+        - payment_methods
+      properties:
+        payment_methods:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentMethodDetails'
+
+    PaymentMethodDetails:
+      type: object
+      required:
+        - id
+        - payment_type
+        - is_primary
+        - last_four
+        - brand
+        - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+        payment_type:
+          $ref: '#/components/schemas/PaymentMethodType'
+        is_primary:
+          type: boolean
+        last_four:
+          type: string
+        brand:
+          type: string
+        expires_at:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+
+    AlertsResponse:
+      type: object
+      required:
+        - alerts
+      properties:
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertDetails'
+
+    AlertDetails:
+      type: object
+      required:
+        - id
+        - alert_type
+        - severity
+        - title
+        - message
+        - is_resolved
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        parent_name:
+          type: string
+          nullable: true
+        payment_id:
+          type: string
+          format: uuid
+          nullable: true
+        alert_type:
+          $ref: '#/components/schemas/AlertType'
+        severity:
+          $ref: '#/components/schemas/AlertSeverity'
+        title:
+          type: string
+        message:
+          type: string
+        is_resolved:
+          type: boolean
+        resolved_by:
+          type: string
+          format: uuid
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    ResolveAlertRequest:
+      type: object
+      required:
+        - school_id
+        - resolution_notes
+      properties:
+        school_id:
+          type: string
+          format: uuid
+        resolution_notes:
+          type: string
+
+    PaginationInfo:
+      type: object
+      required:
+        - current_page
+        - total_pages
+        - total_items
+        - items_per_page
+      properties:
+        current_page:
+          type: integer
+        total_pages:
+          type: integer
+        total_items:
+          type: integer
+        items_per_page:
+          type: integer
+
+    # Enums
+    PaymentStatus:
+      type: string
+      enum: ["pending", "completed", "failed", "cancelled", "refunded"]
+
+    PaymentMethod:
+      type: string
+      enum: ["stripe_card", "stripe_bank", "bank_transfer", "ach"]
+
+    PaymentMethodType:
+      type: string
+      enum: ["card", "bank_account", "ach"]
+
+    InvoiceStatus:
+      type: string
+      enum: ["draft", "sent", "paid", "overdue", "cancelled"]
+
+    LineItemType:
+      type: string
+      enum: ["tuition", "fees", "supplies", "activities", "other"]
+
+    AlertType:
+      type: string
+      enum: ["failed_payment", "overdue_payment", "expired_card", "webhook_failure"]
+
+    AlertSeverity:
+      type: string
+      enum: ["low", "medium", "high", "critical"]

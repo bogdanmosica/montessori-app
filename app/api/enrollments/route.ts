@@ -110,19 +110,20 @@ export async function POST(request: NextRequest) {
 
     let enrollment;
 
-    if (validatedRequest.child.existingChildId) {
+    // Check if we're using an existing child or creating a new one
+    if ('existingChildId' in validatedRequest.child) {
       // Create enrollment with existing child
       enrollment = await EnrollmentService.createEnrollment(
         validatedRequest,
         schoolId,
-        adminUserId
+        Number(adminUserId)
       );
     } else {
       // Create child first, then enrollment
       const newChild = await ChildService.createChildFromEnrollment(
         validatedRequest.child,
         schoolId,
-        adminUserId
+        Number(adminUserId)
       );
 
       // Update request to use new child ID
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
       enrollment = await EnrollmentService.createEnrollment(
         enrollmentRequest,
         schoolId,
-        adminUserId
+        Number(adminUserId)
       );
     }
 

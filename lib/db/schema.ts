@@ -14,6 +14,14 @@ import { relations } from 'drizzle-orm';
 // Import enrollments schema
 export * from './schema/enrollments';
 
+// Import payment schemas
+export * from './schema/payment-record';
+export * from './schema/payment-method';
+export * from './schema/invoice';
+export * from './schema/invoice-line-item';
+export * from './schema/payment-alert';
+export * from './schema/access-log';
+
 export const userRoleEnum = pgEnum('user_role', ['parent', 'teacher', 'admin']);
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['enrolled', 'pending', 'waitlisted', 'withdrawn']);
 export const paymentStatusEnum = pgEnum('payment_status', ['current', 'pending', 'overdue', 'partial']);
