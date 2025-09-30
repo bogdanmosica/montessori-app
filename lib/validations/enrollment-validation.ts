@@ -71,6 +71,11 @@ export const enrollmentDataSchema = z.object({
     (date) => new Date(date) <= new Date(),
     { message: 'Enrollment date cannot be in the future' }
   ),
+  monthlyFeeOverride: z.number()
+    .min(0, 'Fee cannot be negative')
+    .max(10000, 'Fee cannot exceed 10,000 RON')
+    .nullable()
+    .optional(),
   notes: z.string()
     .max(ENROLLMENT_VALIDATION.NOTES_MAX_LENGTH, `Notes must be ${ENROLLMENT_VALIDATION.NOTES_MAX_LENGTH} characters or less`)
     .optional(),
@@ -80,6 +85,11 @@ export const enrollmentUpdateDataSchema = z.object({
   status: enrollmentStatusSchema.optional(),
   enrollmentDate: dateStringSchema.optional(),
   withdrawalDate: dateStringSchema.optional(),
+  monthlyFeeOverride: z.number()
+    .min(0, 'Fee cannot be negative')
+    .max(10000, 'Fee cannot exceed 10,000 RON')
+    .nullable()
+    .optional(),
   notes: z.string()
     .max(ENROLLMENT_VALIDATION.NOTES_MAX_LENGTH, `Notes must be ${ENROLLMENT_VALIDATION.NOTES_MAX_LENGTH} characters or less`)
     .optional(),

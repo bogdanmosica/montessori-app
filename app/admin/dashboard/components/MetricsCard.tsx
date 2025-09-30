@@ -1,6 +1,7 @@
 // T019: Create MetricsCard server component
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MetricCard } from '@/components/ui/metric-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, UserPlus, TrendingUp, TrendingDown } from 'lucide-react';
@@ -37,7 +38,7 @@ export default function MetricsCard({ metrics, className }: MetricsCardProps) {
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${className}`}>
       {/* Pending Applications Card */}
-      <Card data-testid="metrics-card-applications" className="hover:shadow-lg transition-shadow">
+      <MetricCard data-testid="metrics-card-applications">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Pending Applications</CardTitle>
           <UserPlus className="h-4 w-4 text-muted-foreground" />
@@ -55,10 +56,10 @@ export default function MetricsCard({ metrics, className }: MetricsCardProps) {
             </Button>
           )}
         </CardContent>
-      </Card>
+      </MetricCard>
 
       {/* Active Enrollments Card */}
-      <Card data-testid="metrics-card-enrollments" className="hover:shadow-lg transition-shadow">
+      <MetricCard data-testid="metrics-card-enrollments">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Active Enrollments</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
@@ -74,10 +75,10 @@ export default function MetricsCard({ metrics, className }: MetricsCardProps) {
             </Link>
           </Button>
         </CardContent>
-      </Card>
+      </MetricCard>
 
       {/* Capacity Utilization Card */}
-      <Card data-testid="metrics-card-capacity" className="hover:shadow-lg transition-shadow">
+      <MetricCard data-testid="metrics-card-capacity">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Capacity Utilization</CardTitle>
           <div className="h-4 w-4">
@@ -103,10 +104,10 @@ export default function MetricsCard({ metrics, className }: MetricsCardProps) {
              capacityUtilization >= 50 ? 'Moderate' : 'Low Utilization'}
           </Badge>
         </CardContent>
-      </Card>
+      </MetricCard>
 
       {/* Teacher Engagement Card */}
-      <Card data-testid="metrics-card-teachers" className="hover:shadow-lg transition-shadow">
+      <MetricCard data-testid="metrics-card-teachers">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Teacher Engagement</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
@@ -121,7 +122,7 @@ export default function MetricsCard({ metrics, className }: MetricsCardProps) {
             <div>{teacherActivity.classroomUpdates} updates this week</div>
           </div>
         </CardContent>
-      </Card>
+      </MetricCard>
     </div>
   );
 }

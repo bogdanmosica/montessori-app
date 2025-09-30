@@ -1,6 +1,7 @@
 // T020: Create CashflowCard server component
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MetricCard } from '@/components/ui/metric-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -39,7 +40,7 @@ export default function CashflowCard({ cashflowMetrics, className }: CashflowCar
   const hasPaymentIssues = revenueBreakdown.pendingPayments > 0 || revenueBreakdown.overduePayments > 0;
 
   return (
-    <Card data-testid="cashflow-card" className={`${className}`}>
+    <MetricCard data-testid="cashflow-card" className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <DollarSign className="h-5 w-5 text-green-600" />
@@ -145,6 +146,6 @@ export default function CashflowCard({ cashflowMetrics, className }: CashflowCar
           Base fee: {formatCurrency(baseFeePerChild)} per child per month
         </div>
       </CardContent>
-    </Card>
+    </MetricCard>
   );
 }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth/config';
 import { EnrollmentService } from '@/lib/services/enrollment-service';
 import { ChildService } from '@/lib/services/child-service';
 import {
@@ -22,7 +21,7 @@ interface RouteParams {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     // Check authentication and admin role
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -33,7 +32,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Get school ID and admin user ID from session
     const schoolId = session.user.teamId;
-    const adminUserId = session.user.id;
+    const adminUserId = parseInt(session.user.id);
 
     if (!schoolId || !adminUserId) {
       return NextResponse.json({ error: 'Session data incomplete' }, { status: 400 });
@@ -153,7 +152,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     // Check authentication and admin role
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -164,7 +163,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Get school ID and admin user ID from session
     const schoolId = session.user.teamId;
-    const adminUserId = session.user.id;
+    const adminUserId = parseInt(session.user.id);
 
     if (!schoolId || !adminUserId) {
       return NextResponse.json({ error: 'Session data incomplete' }, { status: 400 });
@@ -270,7 +269,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     // Check authentication and admin role
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

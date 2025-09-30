@@ -21,6 +21,7 @@ import AdminNavigation from '@/components/admin/admin-navigation';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MetricCard } from '@/components/ui/metric-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -75,7 +76,7 @@ async function SuperAdminDashboard() {
       <div className="space-y-8">
         {/* System Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card data-testid="total-schools-metric">
+          <MetricCard data-testid="total-schools-metric">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Schools</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -84,9 +85,9 @@ async function SuperAdminDashboard() {
               <div className="text-2xl font-bold">{systemMetrics.totalSchools}</div>
               <p className="text-xs text-muted-foreground">Across all regions</p>
             </CardContent>
-          </Card>
+          </MetricCard>
 
-          <Card data-testid="total-students-metric">
+          <MetricCard data-testid="total-students-metric">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Students</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -97,9 +98,9 @@ async function SuperAdminDashboard() {
                 {systemMetrics.systemCapacityUtilization.toFixed(1)}% system capacity
               </p>
             </CardContent>
-          </Card>
+          </MetricCard>
 
-          <Card data-testid="total-revenue-metric">
+          <MetricCard data-testid="total-revenue-metric">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
@@ -112,9 +113,9 @@ async function SuperAdminDashboard() {
                 ${systemMetrics.averageRevenuePerSchool.toLocaleString()} avg per school
               </p>
             </CardContent>
-          </Card>
+          </MetricCard>
 
-          <Card data-testid="system-health-card">
+          <MetricCard data-testid="system-health-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">System Health</CardTitle>
               <Shield className="h-4 w-4 text-green-600" />
@@ -127,7 +128,7 @@ async function SuperAdminDashboard() {
                 {systemMetrics.systemHealth.avgResponseTime}ms avg response
               </p>
             </CardContent>
-          </Card>
+          </MetricCard>
         </div>
 
         {/* System Details */}

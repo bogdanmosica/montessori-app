@@ -15,6 +15,7 @@ export const enrollments = pgTable(
     status: enrollmentManagementStatusEnum('status').notNull().default('active'),
     enrollmentDate: timestamp('enrollment_date').notNull(),
     withdrawalDate: timestamp('withdrawal_date'),
+    monthlyFeeOverride: integer('monthly_fee_override'), // Override fee in cents, null means use child default
     notes: text('notes'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),

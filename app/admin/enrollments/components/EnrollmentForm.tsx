@@ -33,6 +33,7 @@ import { createEnrollmentRequestSchema } from '@/lib/validations/enrollment-vali
 import { ENROLLMENT_STATUS_OPTIONS } from '../constants';
 import type { CreateEnrollmentRequest, Child } from '../types';
 import { z } from 'zod';
+import { FeeInput } from '@/components/ui/fee-input';
 
 interface EnrollmentFormProps {
   mode: 'create' | 'edit';
@@ -198,6 +199,26 @@ export function EnrollmentForm({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="enrollment.monthlyFeeOverride"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Monthly Fee Override (Optional)</FormLabel>
+                  <FormControl>
+                    <FeeInput
+                      id="monthlyFeeOverride"
+                      value={field.value ?? null}
+                      onChange={field.onChange}
+                      placeholder="0.00"
+                      helperText="Override the child's default monthly fee for this enrollment. Leave empty to use the child's default fee."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
