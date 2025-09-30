@@ -6,14 +6,14 @@ import AdminNavigation from '@/components/admin/admin-navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ArrowLeft, 
-  User, 
-  Calendar, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Heart, 
+import {
+  ArrowLeft,
+  User,
+  Calendar,
+  Phone,
+  Mail,
+  MapPin,
+  Heart,
   AlertTriangle,
   Users,
   Edit
@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { db } from '@/lib/db/drizzle';
 import { children, parentProfiles, parentChildRelationships } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { FeeDisplay } from '@/components/ui/fee-display';
 
 interface ChildDetailsProps {
   params: Promise<{ id: string }>;
@@ -254,7 +255,9 @@ async function ChildDetailsContent({ params }: ChildDetailsProps) {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Monthly Fee</label>
-                  <p className="text-gray-900 font-medium">{formatCurrency(childWithParents.monthlyFee)}</p>
+                  <p className="text-gray-900 font-medium">
+                    <FeeDisplay feeCents={childWithParents.monthlyFee} format="default" />
+                  </p>
                 </div>
               </div>
 

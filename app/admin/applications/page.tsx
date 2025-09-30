@@ -8,6 +8,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Users, FileText, Clock } from 'lucide-react';
 import Link from 'next/link';
 import AdminNavigation from '@/components/admin/admin-navigation';
+import { getApplicationsMetrics } from '@/lib/services/applications-metrics';
+import { auth } from '@/lib/auth/config';
+import { redirect } from 'next/navigation';
+import { UserRole } from '@/lib/constants/user-roles';
 
 interface ApplicationsPageProps {
   searchParams: Promise<{
@@ -19,16 +23,31 @@ interface ApplicationsPageProps {
   }>;
 }
 
-// Mock school ID - in production this would come from auth context
-const SCHOOL_ID = 1;
-
 export default async function ApplicationsPage({ searchParams }: ApplicationsPageProps) {
+  // Check authentication and get school ID
+  const session = await auth();
+  if (!session?.user) {
+    redirect('/sign-in');
+  }
+
+  if (session.user.role !== UserRole.ADMIN) {
+    redirect('/unauthorized');
+  }
+
+  const schoolId = session.user.teamId;
+  if (!schoolId) {
+    redirect('/unauthorized');
+  }
+
   const params = await searchParams;
   const page = parseInt(params.page || '1');
   const limit = parseInt(params.limit || '20');
   const status = params.status;
   const search = params.search;
   const type = params.type;
+
+  // Fetch real metrics
+  const metrics = await getApplicationsMetrics(schoolId);
 
   return (
     <div className="min-h-screen bg-gray-50/30">
@@ -61,7 +80,7 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">2</div>
+                <div className="text-2xl font-bold">{metrics.pendingApplications}</div>
                 <p className="text-xs text-muted-foreground">
                   Awaiting review
                 </p>
@@ -74,7 +93,7 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">1</div>
+                <div className="text-2xl font-bold">{metrics.activeEnrollments}</div>
                 <p className="text-xs text-muted-foreground">
                   Currently enrolled
                 </p>
@@ -87,7 +106,7 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">4</div>
+                <div className="text-2xl font-bold">{metrics.totalApplications}</div>
                 <p className="text-xs text-muted-foreground">
                   All time
                 </p>
@@ -100,9 +119,9 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0.5%</div>
+                <div className="text-2xl font-bold">{metrics.capacityUsed.percentage}%</div>
                 <p className="text-xs text-muted-foreground">
-                  1 of 200 spots
+                  {metrics.capacityUsed.enrolled} of {metrics.capacityUsed.totalCapacity} spots
                 </p>
               </CardContent>
             </Card>
@@ -138,7 +157,7 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
             <CardContent>
               <Suspense fallback={<ApplicationsListSkeleton />}>
                 <ApplicationsList
-                  schoolId={SCHOOL_ID}
+                  schoolId={schoolId}
                   page={page}
                   limit={limit}
                   status={status}

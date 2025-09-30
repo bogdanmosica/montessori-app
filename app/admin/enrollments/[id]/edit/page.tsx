@@ -36,27 +36,36 @@ export default async function EditEnrollmentPage({ params }: EditEnrollmentPageP
   // Get enrollment ID
   const { id: enrollmentId } = await params;
 
-  // Fetch enrollment data
-  const enrollment = await EnrollmentService.getEnrollmentById(enrollmentId, schoolId);
+  // Fetch enrollment data with fee information
+  const enrollmentWithFee = await EnrollmentService.getEnrollmentWithEffectiveFee(enrollmentId, schoolId);
 
-  if (!enrollment) {
+  if (!enrollmentWithFee) {
     notFound();
   }
+
+  const enrollment = enrollmentWithFee.enrollment;
+  const child = enrollmentWithFee.child;
+
+  // Convert monthlyFeeOverride from cents to RON for the form
+  const monthlyFeeOverrideRon = enrollment.monthlyFeeOverride !== null
+    ? enrollment.monthlyFeeOverride / 100
+    : undefined;
 
   // Prepare default values for the form
   const defaultValues = {
     enrollment: {
-      enrollmentDate: enrollment.enrollmentDate.split('T')[0], // Convert to date input format
+      enrollmentDate: enrollment.enrollmentDate.toISOString().split('T')[0],
+      monthlyFeeOverride: monthlyFeeOverrideRon,
       notes: enrollment.notes || '',
     },
     child: {
-      existingChildId: enrollment.child.id,
-      firstName: enrollment.child.firstName,
-      lastName: enrollment.child.lastName,
-      dateOfBirth: enrollment.child.dateOfBirth.split('T')[0],
-      parentName: enrollment.child.parentName,
-      parentEmail: enrollment.child.parentEmail || '',
-      parentPhone: enrollment.child.parentPhone || '',
+      existingChildId: child.id,
+      firstName: child.firstName,
+      lastName: child.lastName,
+      dateOfBirth: '',
+      parentName: '',
+      parentEmail: '',
+      parentPhone: '',
     },
   };
 
@@ -77,7 +86,7 @@ export default async function EditEnrollmentPage({ params }: EditEnrollmentPageP
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Edit Enrollment</h1>
                 <p className="text-gray-500 mt-1">
-                  Update enrollment details for {enrollment.child.firstName} {enrollment.child.lastName}
+                  Update enrollment details for {child.firstName} {child.lastName}
                 </p>
               </div>
             </div>

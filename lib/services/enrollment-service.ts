@@ -10,6 +10,8 @@ import type {
   UpdateEnrollmentRequest
 } from '@/app/admin/enrollments/types';
 import { ENROLLMENT_STATUS, ENROLLMENT_PAGINATION } from '@/app/admin/enrollments/constants';
+import { ronToCents, centsToRon, formatFeeDisplay, isValidFeeAmount } from '@/lib/constants/currency';
+import type { CreateEnrollmentWithFeeRequest, UpdateEnrollmentFeeRequest } from '@/lib/validations/fee-validation';
 
 export class EnrollmentService {
   /**
@@ -402,5 +404,262 @@ export class EnrollmentService {
       .limit(1);
 
     return result.length > 0;
+  }
+
+  /**
+   * Create enrollment with fee override support
+   */
+  static async createEnrollmentWithFee(
+    request: CreateEnrollmentWithFeeRequest,
+    schoolId: number,
+    adminUserId: number
+  ): Promise<Enrollment> {
+    const { childId, enrollmentDate, monthlyFeeOverride, notes } = request;
+
+    // Verify child exists and belongs to this school
+    const child = await db
+      .select()
+      .from(children)
+      .where(
+        and(
+          eq(children.id, childId),
+          eq(children.schoolId, schoolId)
+        )
+      )
+      .limit(1);
+
+    if (!child.length) {
+      throw new Error('Child not found or does not belong to this school');
+    }
+
+    // Check for existing active enrollment
+    const hasActive = await EnrollmentService.hasActiveEnrollment(childId, schoolId);
+    if (hasActive) {
+      throw new Error('Child already has an active enrollment');
+    }
+
+    // Convert fee override from RON to cents if provided
+    let feeOverrideCents: number | null = null;
+    if (monthlyFeeOverride !== undefined && monthlyFeeOverride !== null) {
+      feeOverrideCents = ronToCents(monthlyFeeOverride);
+      if (!isValidFeeAmount(feeOverrideCents)) {
+        throw new Error('Invalid fee override amount');
+      }
+    }
+
+    const newEnrollment: NewEnrollment = {
+      childId,
+      schoolId,
+      status: ENROLLMENT_STATUS.ACTIVE,
+      enrollmentDate: new Date(enrollmentDate),
+      monthlyFeeOverride: feeOverrideCents,
+      notes: notes || null,
+      createdBy: adminUserId,
+      updatedBy: adminUserId,
+    };
+
+    const [createdEnrollment] = await db
+      .insert(enrollments)
+      .values(newEnrollment)
+      .returning();
+
+    return createdEnrollment;
+  }
+
+  /**
+   * Update enrollment fee override
+   */
+  static async updateEnrollmentFee(
+    enrollmentId: string,
+    feeData: UpdateEnrollmentFeeRequest,
+    schoolId: number,
+    adminUserId: number
+  ): Promise<Enrollment> {
+    // Verify enrollment exists and belongs to this school
+    const existing = await db
+      .select()
+      .from(enrollments)
+      .where(
+        and(
+          eq(enrollments.id, enrollmentId),
+          eq(enrollments.schoolId, schoolId)
+        )
+      )
+      .limit(1);
+
+    if (!existing.length) {
+      throw new Error('Enrollment not found');
+    }
+
+    // Convert fee override from RON to cents if provided
+    let feeOverrideCents: number | null = null;
+    if (feeData.monthlyFeeOverride !== undefined) {
+      if (feeData.monthlyFeeOverride !== null) {
+        feeOverrideCents = ronToCents(feeData.monthlyFeeOverride);
+        if (!isValidFeeAmount(feeOverrideCents)) {
+          throw new Error('Invalid fee override amount');
+        }
+      }
+      // If monthlyFeeOverride is explicitly null, we keep it as null
+    }
+
+    await db
+      .update(enrollments)
+      .set({
+        monthlyFeeOverride: feeOverrideCents,
+        updatedBy: adminUserId,
+        updatedAt: new Date(),
+      })
+      .where(eq(enrollments.id, enrollmentId));
+
+    // Return updated enrollment
+    const [updated] = await db
+      .select()
+      .from(enrollments)
+      .where(eq(enrollments.id, enrollmentId))
+      .limit(1);
+
+    if (!updated) {
+      throw new Error('Failed to retrieve updated enrollment');
+    }
+
+    return updated;
+  }
+
+  /**
+   * Get enrollment with effective fee (resolved from child default or override)
+   */
+  static async getEnrollmentWithEffectiveFee(
+    enrollmentId: string,
+    schoolId: number
+  ): Promise<{ 
+    enrollment: Enrollment; 
+    child: { id: string; firstName: string; lastName: string; monthlyFee: number }; 
+    effectiveFee: number; 
+    effectiveFeeDisplay: string;
+    feeSource: 'child_default' | 'enrollment_override';
+  } | null> {
+    const result = await db
+      .select({
+        enrollment: enrollments,
+        child: {
+          id: children.id,
+          firstName: children.firstName,
+          lastName: children.lastName,
+          monthlyFee: children.monthlyFee,
+        }
+      })
+      .from(enrollments)
+      .innerJoin(children, eq(enrollments.childId, children.id))
+      .where(
+        and(
+          eq(enrollments.id, enrollmentId),
+          eq(enrollments.schoolId, schoolId)
+        )
+      )
+      .limit(1);
+
+    if (!result.length) {
+      return null;
+    }
+
+    const { enrollment, child } = result[0];
+
+    // Resolve effective fee
+    const effectiveFee = enrollment.monthlyFeeOverride !== null 
+      ? enrollment.monthlyFeeOverride 
+      : child.monthlyFee;
+
+    const feeSource = enrollment.monthlyFeeOverride !== null 
+      ? 'enrollment_override' as const
+      : 'child_default' as const;
+
+    return {
+      enrollment,
+      child,
+      effectiveFee,
+      effectiveFeeDisplay: formatFeeDisplay(effectiveFee),
+      feeSource,
+    };
+  }
+
+  /**
+   * Get all enrollments for a child with effective fees
+   */
+  static async getChildEnrollmentsWithFees(
+    childId: string,
+    schoolId: number
+  ): Promise<Array<{
+    enrollment: Enrollment;
+    effectiveFee: number;
+    effectiveFeeDisplay: string;
+    feeSource: 'child_default' | 'enrollment_override';
+  }>> {
+    const result = await db
+      .select({
+        enrollment: enrollments,
+        childFee: children.monthlyFee,
+      })
+      .from(enrollments)
+      .innerJoin(children, eq(enrollments.childId, children.id))
+      .where(
+        and(
+          eq(enrollments.childId, childId),
+          eq(enrollments.schoolId, schoolId)
+        )
+      )
+      .orderBy(desc(enrollments.enrollmentDate));
+
+    return result.map(({ enrollment, childFee }) => {
+      const effectiveFee = enrollment.monthlyFeeOverride !== null 
+        ? enrollment.monthlyFeeOverride 
+        : childFee;
+
+      const feeSource = enrollment.monthlyFeeOverride !== null 
+        ? 'enrollment_override' as const
+        : 'child_default' as const;
+
+      return {
+        enrollment,
+        effectiveFee,
+        effectiveFeeDisplay: formatFeeDisplay(effectiveFee),
+        feeSource,
+      };
+    });
+  }
+
+  /**
+   * Remove fee override (revert to child default)
+   */
+  static async removeEnrollmentFeeOverride(
+    enrollmentId: string,
+    schoolId: number,
+    adminUserId: number
+  ): Promise<Enrollment> {
+    await db
+      .update(enrollments)
+      .set({
+        monthlyFeeOverride: null,
+        updatedBy: adminUserId,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(enrollments.id, enrollmentId),
+          eq(enrollments.schoolId, schoolId)
+        )
+      );
+
+    const [updated] = await db
+      .select()
+      .from(enrollments)
+      .where(eq(enrollments.id, enrollmentId))
+      .limit(1);
+
+    if (!updated) {
+      throw new Error('Failed to retrieve updated enrollment');
+    }
+
+    return updated;
   }
 }

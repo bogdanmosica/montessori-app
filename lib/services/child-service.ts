@@ -3,6 +3,8 @@ import { children, users } from '@/lib/db/schema';
 import { eq, and, or, ilike, desc, asc } from 'drizzle-orm';
 import type { Child, NewChild } from '@/lib/db/schema';
 import type { CreateEnrollmentRequest } from '@/app/admin/enrollments/types';
+import { ronToCents, centsToRon, formatFeeDisplay, isValidFeeAmount } from '@/lib/constants/currency';
+import type { CreateChildRequest, UpdateChildRequest } from '@/lib/validations/child-validation';
 
 export class ChildService {
   /**
@@ -42,7 +44,7 @@ export class ChildService {
       .where(
         and(
           eq(children.schoolId, schoolId),
-          eq(children.isActive, true),
+          eq(children.enrollmentStatus, 'ACTIVE'),
           or(
             ilike(children.firstName, searchPattern),
             ilike(children.lastName, searchPattern),
@@ -71,7 +73,7 @@ export class ChildService {
       .where(
         and(
           eq(children.schoolId, schoolId),
-          eq(children.isActive, true)
+          eq(children.enrollmentStatus, 'ACTIVE')
         )
       )
       .orderBy(asc(children.firstName), asc(children.lastName))
@@ -117,6 +119,169 @@ export class ChildService {
       .returning();
 
     return createdChild;
+  }
+
+  /**
+   * Create new child with fee support
+   */
+  static async createChild(
+    childData: CreateChildRequest,
+    schoolId: number,
+    adminUserId: number
+  ): Promise<Child> {
+    // Convert fee from RON to cents for storage
+    const monthlyFeeCents = childData.monthlyFee ? ronToCents(childData.monthlyFee) : 0;
+
+    // Validate fee amount
+    if (!isValidFeeAmount(monthlyFeeCents)) {
+      throw new Error('Invalid fee amount');
+    }
+
+    const newChild: NewChild = {
+      schoolId,
+      firstName: childData.firstName,
+      lastName: childData.lastName,
+      dateOfBirth: new Date(childData.dateOfBirth),
+      monthlyFee: monthlyFeeCents,
+      gender: childData.gender || null,
+      startDate: new Date(childData.startDate),
+      specialNeeds: childData.specialNeeds || null,
+      medicalConditions: childData.medicalConditions || null,
+      createdByAdminId: adminUserId,
+    };
+
+    const [createdChild] = await db
+      .insert(children)
+      .values(newChild)
+      .returning();
+
+    return createdChild;
+  }
+
+  /**
+   * Update child with fee support
+   */
+  static async updateChild(
+    childId: string,
+    childData: UpdateChildRequest,
+    schoolId: number
+  ): Promise<Child> {
+    // Build update object
+    const updateData: Partial<NewChild> = {};
+
+    if (childData.firstName !== undefined) updateData.firstName = childData.firstName;
+    if (childData.lastName !== undefined) updateData.lastName = childData.lastName;
+    if (childData.dateOfBirth !== undefined) updateData.dateOfBirth = new Date(childData.dateOfBirth);
+    if (childData.gender !== undefined) updateData.gender = childData.gender || null;
+    if (childData.startDate !== undefined) updateData.startDate = new Date(childData.startDate);
+    if (childData.specialNeeds !== undefined) updateData.specialNeeds = childData.specialNeeds || null;
+    if (childData.medicalConditions !== undefined) updateData.medicalConditions = childData.medicalConditions || null;
+
+    // Handle fee update
+    if (childData.monthlyFee !== undefined) {
+      const monthlyFeeCents = childData.monthlyFee ? ronToCents(childData.monthlyFee) : 0;
+      if (!isValidFeeAmount(monthlyFeeCents)) {
+        throw new Error('Invalid fee amount');
+      }
+      updateData.monthlyFee = monthlyFeeCents;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      // No updates needed, return existing child
+      const existing = await ChildService.getChildById(childId, schoolId);
+      if (!existing) {
+        throw new Error('Child not found');
+      }
+      return existing;
+    }
+
+    updateData.updatedAt = new Date();
+
+    await db
+      .update(children)
+      .set(updateData)
+      .where(
+        and(
+          eq(children.id, childId),
+          eq(children.schoolId, schoolId)
+        )
+      );
+
+    const updated = await ChildService.getChildById(childId, schoolId);
+    if (!updated) {
+      throw new Error('Failed to retrieve updated child');
+    }
+
+    return updated;
+  }
+
+  /**
+   * Update only the child's monthly fee
+   */
+  static async updateChildFee(
+    childId: string,
+    feeInRon: number,
+    schoolId: number
+  ): Promise<Child> {
+    const monthlyFeeCents = ronToCents(feeInRon);
+
+    if (!isValidFeeAmount(monthlyFeeCents)) {
+      throw new Error('Invalid fee amount');
+    }
+
+    await db
+      .update(children)
+      .set({
+        monthlyFee: monthlyFeeCents,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(children.id, childId),
+          eq(children.schoolId, schoolId)
+        )
+      );
+
+    const updated = await ChildService.getChildById(childId, schoolId);
+    if (!updated) {
+      throw new Error('Failed to retrieve updated child');
+    }
+
+    return updated;
+  }
+
+  /**
+   * Get child with formatted fee display
+   */
+  static async getChildWithFeeDisplay(childId: string, schoolId: number): Promise<(Child & { monthlyFeeDisplay: string }) | null> {
+    const child = await ChildService.getChildById(childId, schoolId);
+    
+    if (!child) {
+      return null;
+    }
+
+    return {
+      ...child,
+      monthlyFeeDisplay: formatFeeDisplay(child.monthlyFee),
+    };
+  }
+
+  /**
+   * Get all children with formatted fee displays
+   */
+  static async getChildrenWithFeeDisplay(
+    schoolId: number,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ data: (Child & { monthlyFeeDisplay: string })[]; total: number }> {
+    const { data, total } = await ChildService.getChildren(schoolId, page, limit);
+
+    const dataWithFeeDisplay = data.map(child => ({
+      ...child,
+      monthlyFeeDisplay: formatFeeDisplay(child.monthlyFee),
+    }));
+
+    return { data: dataWithFeeDisplay, total };
   }
 
   /**
@@ -211,7 +376,7 @@ export class ChildService {
       return { canEnroll: false, reason: 'Child not found' };
     }
 
-    if (!child.isActive) {
+    if (child.enrollmentStatus !== 'ACTIVE') {
       return { canEnroll: false, reason: 'Child profile is inactive' };
     }
 

@@ -23,6 +23,7 @@ import Link from 'next/link';
 import { EnrollmentService } from '@/lib/services/enrollment-service';
 import type { EnrollmentWithChild } from '@/app/admin/enrollments/types';
 import { ENROLLMENT_STATUS } from '@/app/admin/enrollments/constants';
+import { FeeDisplay, FeeComparison } from '@/components/ui/fee-display';
 
 interface EnrollmentDetailsProps {
   params: Promise<{ id: string }>;
@@ -45,13 +46,13 @@ async function EnrollmentDetailsContent({ enrollmentId }: { enrollmentId: string
   const schoolId = session.user.teamId;
 
   try {
-    const enrollment = await EnrollmentService.getEnrollmentById(enrollmentId, schoolId);
-    
-    if (!enrollment) {
+    const enrollmentWithFee = await EnrollmentService.getEnrollmentWithEffectiveFee(enrollmentId, schoolId);
+
+    if (!enrollmentWithFee) {
       return notFound();
     }
 
-    return <EnrollmentDetailsDisplay enrollment={enrollment} />;
+    return <EnrollmentDetailsDisplay enrollmentData={enrollmentWithFee} />;
   } catch (error) {
     console.error('Error fetching enrollment details:', error);
     return notFound();
@@ -59,7 +60,33 @@ async function EnrollmentDetailsContent({ enrollmentId }: { enrollmentId: string
 }
 
 // Component to display enrollment details
-function EnrollmentDetailsDisplay({ enrollment }: { enrollment: EnrollmentWithChild }) {
+function EnrollmentDetailsDisplay({ enrollmentData }: { enrollmentData: {
+  enrollment: any;
+  child: { id: string; firstName: string; lastName: string; monthlyFee: number };
+  effectiveFee: number;
+  effectiveFeeDisplay: string;
+  feeSource: 'child_default' | 'enrollment_override';
+} }) {
+  const enrollment = {
+    id: enrollmentData.enrollment.id,
+    status: enrollmentData.enrollment.status,
+    enrollmentDate: enrollmentData.enrollment.enrollmentDate.toISOString(),
+    withdrawalDate: enrollmentData.enrollment.withdrawalDate?.toISOString(),
+    notes: enrollmentData.enrollment.notes,
+    createdAt: enrollmentData.enrollment.createdAt.toISOString(),
+    updatedAt: enrollmentData.enrollment.updatedAt.toISOString(),
+    createdBy: enrollmentData.enrollment.createdBy.toString(),
+    updatedBy: enrollmentData.enrollment.updatedBy.toString(),
+    child: {
+      id: enrollmentData.child.id,
+      firstName: enrollmentData.child.firstName,
+      lastName: enrollmentData.child.lastName,
+      dateOfBirth: new Date().toISOString(), // Placeholder
+      parentName: '',
+      parentEmail: undefined,
+      parentPhone: undefined,
+    }
+  };
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
@@ -291,6 +318,23 @@ function EnrollmentDetailsDisplay({ enrollment }: { enrollment: EnrollmentWithCh
                   </p>
                 </div>
                 
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Monthly Fee</label>
+                  <div className="mt-2">
+                    {enrollmentData.feeSource === 'enrollment_override' ? (
+                      <FeeComparison
+                        defaultFeeCents={enrollmentData.child.monthlyFee}
+                        overrideFeeCents={enrollmentData.enrollment.monthlyFeeOverride}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Effective fee:</span>
+                        <FeeDisplay feeCents={enrollmentData.effectiveFee} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {enrollment.withdrawalDate && (
                   <div>
                     <label className="text-sm font-medium text-gray-500">Withdrawal Date</label>

@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { FeeInput } from '@/components/ui/fee-input';
 
 interface CreateChildFormProps {
   adminUserId: number;
@@ -35,6 +36,7 @@ interface ChildData {
   first_name: string;
   last_name: string;
   date_of_birth: string;
+  monthly_fee?: number;
   gender?: string;
   start_date: string;
   special_needs?: string;
@@ -53,6 +55,7 @@ export function CreateChildForm({ adminUserId, schoolId }: CreateChildFormProps)
     first_name: '',
     last_name: '',
     date_of_birth: '2021-05-15', // Default to a valid date for testing
+    monthly_fee: undefined,
     gender: '',
     start_date: '2025-10-01', // Default to a future date
     special_needs: '',
@@ -71,7 +74,7 @@ export function CreateChildForm({ adminUserId, schoolId }: CreateChildFormProps)
     },
   ]);
 
-  const handleChildDataChange = (field: keyof ChildData, value: string) => {
+  const handleChildDataChange = (field: keyof ChildData, value: string | number | null | undefined) => {
     setChildData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -236,39 +239,52 @@ export function CreateChildForm({ adminUserId, schoolId }: CreateChildFormProps)
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Start Date *</Label>
-            <Popover open={isStartDateOpen} onOpenChange={setIsStartDateOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !childData.start_date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {childData.start_date ? (
-                    format(new Date(childData.start_date), 'PPP')
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={childData.start_date ? new Date(childData.start_date) : undefined}
-                  onSelect={(date) => {
-                    if (date) {
-                      handleChildDataChange('start_date', date.toISOString().split('T')[0]);
-                      setIsStartDateOpen(false);
-                    }
-                  }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Start Date *</Label>
+              <Popover open={isStartDateOpen} onOpenChange={setIsStartDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !childData.start_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {childData.start_date ? (
+                      format(new Date(childData.start_date), 'PPP')
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={childData.start_date ? new Date(childData.start_date) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        handleChildDataChange('start_date', date.toISOString().split('T')[0]);
+                        setIsStartDateOpen(false);
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <FeeInput
+                id="monthly-fee"
+                label="Monthly Fee (Optional)"
+                value={childData.monthly_fee ?? null}
+                onChange={(value) => handleChildDataChange('monthly_fee', value ?? undefined)}
+                placeholder="0.00"
+                helperText="Default monthly fee for this child in RON"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

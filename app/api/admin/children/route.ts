@@ -6,12 +6,15 @@ import { db } from '@/lib/db/drizzle';
 import { parentChildRelationships } from '@/lib/db/schema';
 import { auth } from '@/lib/auth/config';
 import { UserRole } from '@/lib/constants/user-roles';
+import { ronToCents, isValidFeeAmount, formatFeeDisplay } from '@/lib/constants/currency';
+import { validateFeeAmount } from '@/lib/validations/fee-validation';
 
 interface CreateChildRequest {
   child: {
     first_name: string;
     last_name: string;
     date_of_birth: string;
+    monthly_fee?: number; // Optional fee in RON
     gender?: string;
     start_date: string;
     special_needs?: string;
@@ -49,13 +52,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Get school ID from session (multi-tenant scoping)
-    const schoolId = session.user.schoolId || session.user.teamId;
-    if (!schoolId) {
+    const schoolIdRaw = session.user.schoolId || session.user.teamId;
+    if (!schoolIdRaw) {
       return NextResponse.json(
         { error: 'School association required' },
         { status: 403 }
       );
     }
+    
+    const schoolId = typeof schoolIdRaw === 'string' ? parseInt(schoolIdRaw) : schoolIdRaw;
 
     // Parse request body
     const requestData: CreateChildRequest = await request.json();
@@ -83,12 +88,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate and process monthly fee
+    let monthlyFeeCents = 0; // Default to free
+    if (requestData.child.monthly_fee !== undefined) {
+      const feeValidation = validateFeeAmount(requestData.child.monthly_fee);
+      if (!feeValidation.valid) {
+        return NextResponse.json(
+          { error: feeValidation.error },
+          { status: 400 }
+        );
+      }
+      monthlyFeeCents = ronToCents(requestData.child.monthly_fee);
+    }
+
     // Validate child data
     const childData = {
-      schoolId: parseInt(schoolId),
+      schoolId: schoolId,
       firstName: requestData.child.first_name,
       lastName: requestData.child.last_name,
       dateOfBirth: new Date(requestData.child.date_of_birth),
+      monthlyFee: monthlyFeeCents,
       gender: requestData.child.gender,
       startDate: new Date(requestData.child.start_date),
       specialNeeds: requestData.child.special_needs,
@@ -109,7 +128,7 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < requestData.parents.length; i++) {
       const parent = requestData.parents[i];
       const parentData = {
-        schoolId: parseInt(schoolId),
+        schoolId: schoolId,
         firstName: parent.first_name,
         lastName: parent.last_name,
         email: parent.email,
@@ -135,7 +154,7 @@ export async function POST(request: NextRequest) {
       for (const parentData of requestData.parents) {
         const parentProfile = await findOrCreateParentProfile(
           {
-            schoolId: parseInt(schoolId),
+            schoolId: schoolId,
             firstName: parentData.first_name,
             lastName: parentData.last_name,
             email: parentData.email,
@@ -146,7 +165,7 @@ export async function POST(request: NextRequest) {
 
         // Create parent-child relationship
         await tx.insert(parentChildRelationships).values({
-          schoolId: parseInt(schoolId),
+          schoolId: schoolId,
           parentId: parentProfile.id,
           childId: childProfile.id,
           relationshipType: parentData.relationship_type,
@@ -164,7 +183,7 @@ export async function POST(request: NextRequest) {
 
       // Log the action
       const accessLog = await logAdminAction({
-        schoolId: parseInt(schoolId),
+        schoolId: schoolId,
         adminUserId: parseInt(session.user.id),
         actionType: 'CHILD_CREATED',
         targetType: 'CHILD',
@@ -175,7 +194,7 @@ export async function POST(request: NextRequest) {
           created_at: new Date().toISOString(),
           direct_creation: true, // not from application
         },
-        ipAddress: request.ip,
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
         userAgent: request.headers.get('user-agent') || undefined,
       }, tx);
 
@@ -194,6 +213,8 @@ export async function POST(request: NextRequest) {
         first_name: result.childProfile.firstName,
         last_name: result.childProfile.lastName,
         date_of_birth: result.childProfile.dateOfBirth.toISOString().split('T')[0],
+        monthly_fee: result.childProfile.monthlyFee, // in cents
+        monthly_fee_display: formatFeeDisplay(result.childProfile.monthlyFee),
         gender: result.childProfile.gender,
         enrollment_status: result.childProfile.enrollmentStatus,
         start_date: result.childProfile.startDate.toISOString().split('T')[0],
