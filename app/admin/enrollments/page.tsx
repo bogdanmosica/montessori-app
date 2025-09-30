@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { MetricCard } from '@/components/ui/metric-card';
 import { Plus, Users, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { auth } from '@/lib/auth/config';
@@ -77,7 +78,7 @@ async function EnrollmentsContent({ searchParams }: EnrollmentsPageProps) {
       {/* Quick Stats */}
       {enrollmentsResponse.pagination.total > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
+          <MetricCard>
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-full bg-blue-100 p-3">
@@ -89,9 +90,9 @@ async function EnrollmentsContent({ searchParams }: EnrollmentsPageProps) {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </MetricCard>
 
-          <Card>
+          <MetricCard>
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-full bg-green-100 p-3">
@@ -105,9 +106,9 @@ async function EnrollmentsContent({ searchParams }: EnrollmentsPageProps) {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </MetricCard>
 
-          <Card>
+          <MetricCard>
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-full bg-orange-100 p-3">
@@ -121,7 +122,7 @@ async function EnrollmentsContent({ searchParams }: EnrollmentsPageProps) {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </MetricCard>
         </div>
       )}
 
@@ -181,14 +182,14 @@ function EnrollmentsLoading() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[...Array(3)].map((_, i) => (
-          <Card key={i}>
+          <MetricCard key={i}>
             <CardContent className="p-6">
               <div className="animate-pulse space-y-3">
                 <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                 <div className="h-8 bg-gray-200 rounded w-1/3"></div>
               </div>
             </CardContent>
-          </Card>
+          </MetricCard>
         ))}
       </div>
 

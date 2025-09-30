@@ -1,6 +1,7 @@
 // T021: Create CapacityCard server component
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MetricCard } from '@/components/ui/metric-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -50,7 +51,7 @@ export default function CapacityCard({
   const availableSpots = totalCapacity - activeEnrollments;
 
   return (
-    <Card data-testid="capacity-card" className={`${className}`}>
+    <MetricCard data-testid="capacity-card" className={className}>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -192,6 +193,6 @@ export default function CapacityCard({
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </MetricCard>
   );
 }

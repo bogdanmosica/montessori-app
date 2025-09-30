@@ -4,6 +4,7 @@ import { ApplicationSearch } from './components/application-search';
 import { ApplicationFilters } from './components/application-filters';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MetricCard } from '@/components/ui/metric-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Users, FileText, Clock } from 'lucide-react';
 import Link from 'next/link';
@@ -74,7 +75,7 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
 
           {/* Quick Stats */}
           <div className="grid gap-4 md:grid-cols-4">
-            <Card>
+            <MetricCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Pending Applications</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
@@ -85,9 +86,9 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
                   Awaiting review
                 </p>
               </CardContent>
-            </Card>
-            
-            <Card>
+            </MetricCard>
+
+            <MetricCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Enrollments</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -98,9 +99,9 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
                   Currently enrolled
                 </p>
               </CardContent>
-            </Card>
-            
-            <Card>
+            </MetricCard>
+
+            <MetricCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -111,9 +112,9 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
                   All time
                 </p>
               </CardContent>
-            </Card>
-            
-            <Card>
+            </MetricCard>
+
+            <MetricCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Capacity Used</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -124,7 +125,7 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
                   {metrics.capacityUsed.enrolled} of {metrics.capacityUsed.totalCapacity} spots
                 </p>
               </CardContent>
-            </Card>
+            </MetricCard>
           </div>
 
           {/* Search and Filters */}
