@@ -337,10 +337,9 @@ export class TrendsService {
       // Get school capacity
       const schoolResult = await db
         .select({
-          totalCapacity: schoolSettings.totalCapacity
+          totalCapacity: teams.maximumCapacity
         })
         .from(teams)
-        .leftJoin(schoolSettings, eq(teams.id, schoolSettings.schoolId))
         .where(eq(teams.id, parseInt(schoolId)))
         .limit(1);
 

@@ -15,6 +15,8 @@ import EmptyState from './components/EmptyState';
 
 // Client Components
 import TrendsChart from './components/TrendsChart.client';
+import { RefreshButton } from './components/refresh-button';
+import { SettingsButton } from './components/settings-button';
 
 // Admin Components
 import AdminNavigation from '@/components/admin/admin-navigation';
@@ -254,16 +256,8 @@ async function SchoolDashboard({ schoolId, context }: { schoolId: string; contex
             <Badge variant="outline" className="text-xs">
               Last updated: {new Date(school.lastUpdated).toLocaleTimeString()}
             </Badge>
-            <Button variant="outline" size="sm">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/admin/settings">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </Link>
-            </Button>
+            <RefreshButton />
+            <SettingsButton />
           </div>
         </div>
 

@@ -58,8 +58,8 @@ export async function getCombinedApplicationsAndChildren(params: CombinedListPar
   const offset = (page - 1) * limit;
   let allItems: CombinedListItem[] = [];
 
-  // Get applications if not filtering by 'enrolled' only
-  if (!type || type === 'application') {
+  // Get applications - only if filtering by application statuses or no status filter
+  if ((!type || type === 'application') && (!status || ['PENDING', 'REJECTED'].includes(status))) {
     let whereConditions = eq(applications.schoolId, schoolId);
 
     // Only show PENDING and REJECTED applications (hide APPROVED since they become enrolled children)
@@ -124,8 +124,8 @@ export async function getCombinedApplicationsAndChildren(params: CombinedListPar
     allItems.push(...applicationItems);
   }
 
-  // Get enrolled children if not filtering by 'application' only
-  if (!type || type === 'enrolled') {
+  // Get enrolled children - only if filtering by enrolled child statuses or no status filter
+  if ((!type || type === 'enrolled') && (!status || ['ACTIVE', 'INACTIVE', 'WAITLISTED'].includes(status))) {
     let whereConditions = eq(children.schoolId, schoolId);
 
     if (status && ['ACTIVE', 'INACTIVE', 'WAITLISTED'].includes(status)) {

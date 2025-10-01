@@ -44,9 +44,9 @@ export default function TrendsChart({ trends, className }: TrendsChartProps) {
   }));
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('ro-RO', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'RON',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);

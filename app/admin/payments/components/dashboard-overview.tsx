@@ -23,7 +23,7 @@ export default function DashboardOverview() {
   const schoolId = 1; // TODO: Get from context/auth
 
   const { data, error, isLoading } = useSWR<DashboardData>(
-    `/api/admin/payments/dashboard?school_id=${schoolId}`,
+    `/api/admin/payments/dashboard-v2?school_id=${schoolId}`,
     fetcher
   );
 
@@ -60,12 +60,14 @@ export default function DashboardOverview() {
   }
 
   const formatCurrency = (amount: number) => {
-    // Convert from cents to dollars
-    const dollars = amount / 100;
-    return new Intl.NumberFormat('en-US', {
+    // Convert from cents to RON
+    const ron = amount / 100;
+    return new Intl.NumberFormat('ro-RO', {
       style: 'currency',
-      currency: 'USD'
-    }).format(dollars);
+      currency: 'RON',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(ron);
   };
 
   return (

@@ -1,20 +1,30 @@
 // T013: Create capacity utilization helpers
 import { db } from '@/lib/db/drizzle';
-import { children, schoolSettings, applications } from '@/lib/db/schema';
+import { children, schoolSettings, applications, teams } from '@/lib/db/schema';
 import { eq, and, count, sql } from 'drizzle-orm';
 import type { AgeGroupCapacity } from '@/lib/types/dashboard';
 import { DEFAULT_AGE_GROUPS } from '../constants';
 
 export async function getCapacityMetrics(schoolId: string) {
   try {
-    // Get school capacity settings
+    // Get school capacity from teams table (settings)
+    const schoolData = await db
+      .select({
+        maximumCapacity: teams.maximumCapacity,
+      })
+      .from(teams)
+      .where(eq(teams.id, parseInt(schoolId)))
+      .limit(1);
+
+    const totalCapacity = schoolData[0]?.maximumCapacity || 100;
+
+    // Get age group capacities from schoolSettings if exists
     const schoolSettingsData = await db
       .select()
       .from(schoolSettings)
       .where(eq(schoolSettings.schoolId, parseInt(schoolId)))
       .limit(1);
 
-    const totalCapacity = schoolSettingsData[0]?.totalCapacity || 100;
     const ageGroupCapacitiesRaw = schoolSettingsData[0]?.ageGroupCapacities;
 
     // Parse age group capacities or use defaults

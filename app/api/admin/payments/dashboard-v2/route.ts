@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { requireAdminPermissions } from '@/lib/auth/dashboard-context';
+import { getDashboardMetrics } from '@/app/admin/dashboard/server/metrics';
 import { db } from '@/lib/db';
-import { payments, families, users, children } from '@/lib/db/schema';
+import { payments, families } from '@/lib/db/schema';
 import { eq, and, desc, gte, lte, count, sum } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -31,22 +32,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid school ID' }, { status: 400 });
     }
 
-    // Get dashboard data from database
+    // Use the same cashflow calculation as the dashboard for consistency
+    const dashboardMetrics = await getDashboardMetrics(schoolId, {
+      period: 'week',
+      includeAlerts: false,
+      includeTrends: false,
+    });
+    
+    const cashflowMetrics = dashboardMetrics.metrics.cashflowMetrics;
+    
+
+    
+    // Convert from RON back to cents to match the expected API format
+    const totalRevenue = Math.round(cashflowMetrics.currentMonthRevenue * 100);
+
+    // Get payment data for other metrics
     const currentMonth = new Date();
     const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-    const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-
-    // Get ONLY active children's fees for revenue calculation
-    // This matches the logic used in the dashboard cashflow widget
-    const activeChildren = await db.select({
-      monthlyFee: children.monthlyFee
-    }).from(children)
-      .where(and(
-        eq(children.schoolId, schoolIdNum),
-        eq(children.enrollmentStatus, 'ACTIVE')
-      ));
-
-    const totalMonthlyRevenue = activeChildren.reduce((sum, child) => sum + (child.monthlyFee || 0), 0);
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
 
     // Payments received this month
     const paymentsThisMonth = await db.select({
@@ -57,14 +61,14 @@ export async function GET(request: NextRequest) {
       .where(and(
         eq(families.schoolId, schoolIdNum),
         gte(payments.createdAt, startOfMonth),
-        lte(payments.createdAt, endOfMonth)
+        lte(payments.createdAt, nextMonth)
       ));
 
     const totalCollected = Number(paymentsThisMonth[0]?.total) || 0;
     const paymentsCount = paymentsThisMonth[0]?.count || 0;
 
     // Pending payments (expected revenue - collected)
-    const pendingAmount = totalMonthlyRevenue - totalCollected;
+    const pendingAmount = totalRevenue - totalCollected;
 
     // Recent payments (last 5)
     const recentPayments = await db.select({
@@ -81,19 +85,19 @@ export async function GET(request: NextRequest) {
       .limit(5);
 
     const dashboardData = {
-      totalRevenue: totalMonthlyRevenue,
+      totalRevenue, // Now uses the same calculation as dashboard cashflow
       totalPayments: paymentsCount,
       pendingAmount,
-      successfulPayments: paymentsCount, // For now, assume all recorded payments are successful
+      successfulPayments: paymentsCount,
       recentPayments,
       activeAlertsCount: 0,
-      alerts: [] // We'll add alerts later if needed
+      alerts: []
     };
 
     return NextResponse.json(dashboardData);
 
   } catch (error) {
-    console.error('Dashboard API error:', error);
+    console.error('Payments Dashboard API error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch dashboard data' },
       { status: 500 }

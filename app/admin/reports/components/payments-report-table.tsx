@@ -59,10 +59,12 @@ export function PaymentsReportTable({
     return PAYMENT_STATUS_LABELS[status as keyof typeof PAYMENT_STATUS_LABELS] || status;
   };
 
-  const formatCurrency = (amount: number, currency: string = 'USD'): string => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (amount: number, currency: string = 'RON'): string => {
+    return new Intl.NumberFormat('ro-RO', {
       style: 'currency',
-      currency: currency.toUpperCase()
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 

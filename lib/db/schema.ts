@@ -8,6 +8,7 @@ import {
   pgEnum,
   boolean,
   uuid,
+  decimal,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -57,6 +58,11 @@ export const teams = pgTable('teams', {
   stripeProductId: text('stripe_product_id'),
   planName: varchar('plan_name', { length: 50 }),
   subscriptionStatus: varchar('subscription_status', { length: 20 }),
+  // Admin Settings for school defaults
+  defaultMonthlyFeeRon: decimal('default_monthly_fee_ron', { precision: 10, scale: 2 }).default('0.00'),
+  freeEnrollmentCount: integer('free_enrollment_count').default(0),
+  maximumCapacity: integer('maximum_capacity').default(100),
+  settingsUpdatedAt: timestamp('settings_updated_at'),
 });
 
 export const teamMembers = pgTable('team_members', {

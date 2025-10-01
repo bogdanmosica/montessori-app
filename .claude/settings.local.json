@@ -14,7 +14,11 @@
       "Bash(mkdir:*)",
       "Bash(pnpm dev:*)",
       "Bash(pnpm run:*)",
-      "Bash(del libconstantscurrency.ts)"
+      "Bash(del libconstantscurrency.ts)",
+      "Bash(del check-children-fees.ts)",
+      "Bash(del update-children-fees.ts)",
+      "Bash(npx playwright:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

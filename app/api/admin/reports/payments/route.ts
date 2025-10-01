@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
           childName: 'Emma Johnson',
           transactionType: 'payment' as const,
           amount: 850,
-          currency: 'USD',
+          currency: 'RON',
           transactionDate: new Date('2025-09-01'),
           paymentMethod: 'Credit Card',
           status: 'completed',
