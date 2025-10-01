@@ -261,25 +261,51 @@ async function calculateCashflowMetrics(schoolId: string): Promise<CashflowMetri
 
     const baseFeePerChild = schoolSettingsData[0]?.baseFeePerChild || 65000; // cents
 
-    // Get all children with their actual monthly fees
-    const childrenWithFees = await db
+    // Get all ACTIVE children with their active enrollments to get fee overrides
+    const { enrollments: enrollmentsTable } = await import('@/lib/db/schema');
+
+    // First, get all active enrollments with child and fee information
+    const activeEnrollmentsWithFees = await db
       .select({
-        id: children.id,
-        monthlyFee: children.monthlyFee,
-        enrollmentStatus: children.enrollmentStatus,
+        childId: children.id,
+        childFirstName: children.firstName,
+        childLastName: children.lastName,
+        childMonthlyFee: children.monthlyFee,
+        enrollmentId: enrollmentsTable.id,
+        enrollmentFeeOverride: enrollmentsTable.monthlyFeeOverride,
+        enrollmentStatus: enrollmentsTable.status,
+        childEnrollmentStatus: children.enrollmentStatus,
       })
-      .from(children)
+      .from(enrollmentsTable)
+      .innerJoin(children, eq(enrollmentsTable.childId, children.id))
       .where(and(
-        eq(children.schoolId, parseInt(schoolId)),
+        eq(enrollmentsTable.schoolId, parseInt(schoolId)),
+        eq(enrollmentsTable.status, 'active'),
         eq(children.enrollmentStatus, 'ACTIVE')
       ));
 
-    const totalChildren = childrenWithFees.length;
+    const totalChildren = activeEnrollmentsWithFees.length;
 
-    // Calculate current monthly revenue from actual child fees
-    const currentMonthRevenue = childrenWithFees.reduce((sum, child) => {
-      return sum + (child.monthlyFee || 0);
+    // Calculate current monthly revenue using enrollment fee override if present, otherwise child fee
+    const currentMonthRevenue = activeEnrollmentsWithFees.reduce((sum, enrollment) => {
+      const effectiveFee = enrollment.enrollmentFeeOverride ?? enrollment.childMonthlyFee ?? 0;
+      return sum + effectiveFee;
     }, 0);
+
+    console.log('📊 Cashflow calculation details:', {
+      totalChildren,
+      activeEnrollments: activeEnrollmentsWithFees.map(e => ({
+        childId: e.childId,
+        childName: `${e.childFirstName} ${e.childLastName}`,
+        childFee: e.childMonthlyFee,
+        enrollmentOverride: e.enrollmentFeeOverride,
+        effectiveFee: e.enrollmentFeeOverride ?? e.childMonthlyFee ?? 0,
+        enrollmentStatus: e.enrollmentStatus,
+        childEnrollmentStatus: e.childEnrollmentStatus
+      })),
+      currentMonthRevenueInCents: currentMonthRevenue,
+      currentMonthRevenueInRON: currentMonthRevenue / 100,
+    });
 
     // Estimate families (assuming average of 1.5 children per family)
     const estimatedFamilies = Math.max(1, Math.round(totalChildren / 1.5));
@@ -294,31 +320,40 @@ async function calculateCashflowMetrics(schoolId: string): Promise<CashflowMetri
     // Estimate single vs multi-child families based on discounts
     const averageFeePerChild = totalChildren > 0 ? currentMonthRevenue / totalChildren : baseFeePerChild;
     const discountPerChild = baseFeePerChild - averageFeePerChild;
+
+    console.log('💰 Revenue calculation breakdown:', {
+      baseFeePerChild: baseFeePerChild,
+      totalChildren: totalChildren,
+      fullPriceRevenue: fullPriceRevenue,
+      actualRevenue: currentMonthRevenue,
+      discountsSavings: discountsSavings,
+      averageFeePerChild: averageFeePerChild
+    });
     const estimatedMultiChildFamilies = Math.round((discountPerChild * totalChildren) / (baseFeePerChild * 0.2)); // Assume 20% discount
     const estimatedSingleChildFamilies = Math.max(0, estimatedFamilies - estimatedMultiChildFamilies);
 
     const revenueBreakdown: RevenueBreakdown = {
       singleChildFamilies: {
         count: estimatedSingleChildFamilies,
-        revenue: (estimatedSingleChildFamilies * baseFeePerChild) / 100, // Convert to dollars
+        revenue: (estimatedSingleChildFamilies * baseFeePerChild) / 100, // Convert cents to RON
       },
       multiChildFamilies: {
         count: estimatedMultiChildFamilies,
-        revenue: (currentMonthRevenue - (estimatedSingleChildFamilies * baseFeePerChild)) / 100, // Convert to dollars
-        totalSavingsFromDiscounts: discountsSavings / 100, // Convert to dollars
+        revenue: (currentMonthRevenue - (estimatedSingleChildFamilies * baseFeePerChild)) / 100, // Convert cents to RON
+        totalSavingsFromDiscounts: discountsSavings / 100, // Convert cents to RON
       },
       pendingPayments: 0, // TODO: Calculate based on payment status
       overduePayments: 0, // TODO: Calculate based on payment due dates
     };
 
     return {
-      currentMonthRevenue: currentMonthRevenue / 100, // Convert cents to dollars
+      currentMonthRevenue: currentMonthRevenue / 100, // Convert cents to RON
       projectedMonthlyRevenue: currentMonthRevenue / 100, // Same as current for now
-      baseFeePerChild: baseFeePerChild / 100, // Convert to dollars
+      baseFeePerChild: baseFeePerChild / 100, // Convert cents to RON
       totalFamilies: estimatedFamilies,
       totalChildren,
-      averageRevenuePerFamily: Math.round(averageRevenuePerFamily) / 100, // Convert to dollars
-      discountsSavings: discountsSavings / 100, // Convert to dollars
+      averageRevenuePerFamily: Math.round(averageRevenuePerFamily) / 100, // Convert cents to RON
+      discountsSavings: discountsSavings / 100, // Convert cents to RON
       revenueBreakdown,
     };
   } catch (error) {
@@ -328,7 +363,7 @@ async function calculateCashflowMetrics(schoolId: string): Promise<CashflowMetri
     return {
       currentMonthRevenue: 0,
       projectedMonthlyRevenue: 0,
-      baseFeePerChild: 650, // $650 in dollars
+      baseFeePerChild: 650, // 650 RON
       totalFamilies: 0,
       totalChildren: 0,
       averageRevenuePerFamily: 0,

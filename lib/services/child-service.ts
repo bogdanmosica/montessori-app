@@ -98,6 +98,37 @@ export class ChildService {
       throw new Error('Missing required child information');
     }
 
+    // Get default monthly fee from school settings
+    const { schoolSettings, teams } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
+    let monthlyFee = 0;
+
+    // Try school settings first
+    const settings = await db
+      .select()
+      .from(schoolSettings)
+      .where(eq(schoolSettings.schoolId, schoolId))
+      .limit(1);
+
+    if (settings[0]?.baseFeePerChild) {
+      monthlyFee = settings[0].baseFeePerChild;
+    } else {
+      // Fall back to team default
+      const team = await db
+        .select()
+        .from(teams)
+        .where(eq(teams.id, schoolId))
+        .limit(1);
+
+      if (team[0]?.defaultMonthlyFeeRon) {
+        monthlyFee = Math.round(parseFloat(team[0].defaultMonthlyFeeRon) * 100);
+      } else {
+        // Ultimate fallback: 650 RON = 65000 cents
+        monthlyFee = 65000;
+      }
+    }
+
     const newChild: NewChild = {
       schoolId,
       firstName: childData.firstName,
@@ -107,7 +138,7 @@ export class ChildService {
       // In a more complex setup, this would create parent_profiles
       specialNeeds: null,
       medicalConditions: null,
-      monthlyFee: 0, // Default value
+      monthlyFee: monthlyFee, // Use school default fee
       gender: null,
       startDate: new Date(), // Default to today
       createdByAdminId: adminUserId,

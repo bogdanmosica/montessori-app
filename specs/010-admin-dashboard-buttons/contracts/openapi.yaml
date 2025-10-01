@@ -1,0 +1,318 @@
+openapi: 3.0.3
+info:
+  title: Admin Dashboard Settings API
+  description: API endpoints for managing school settings and dashboard controls
+  version: 1.0.0
+  contact:
+    name: Monte SMS Development Team
+servers:
+  - url: /api/admin
+    description: Admin API base path
+
+security:
+  - JWTAuth: []
+
+paths:
+  /settings:
+    get:
+      summary: Get School Settings
+      description: Retrieve current school settings for the authenticated admin's school
+      operationId: getSchoolSettings
+      tags:
+        - Settings
+      security:
+        - JWTAuth: []
+      responses:
+        '200':
+          description: Settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+              example:
+                success: true
+                data:
+                  school_id: "school_123"
+                  default_monthly_fee_ron: 150.00
+                  free_enrollment_count: 5
+                  settings_updated_at: "2025-09-30T10:00:00Z"
+                  updated_by_admin: "admin_user"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/SchoolNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update School Settings
+      description: Update school settings for the authenticated admin's school
+      operationId: updateSchoolSettings
+      tags:
+        - Settings
+      security:
+        - JWTAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsUpdateRequest'
+            example:
+              default_monthly_fee_ron: 175.50
+              free_enrollment_count: 8
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsUpdateResponse'
+              example:
+                success: true
+                data:
+                  school_id: "school_123"
+                  default_monthly_fee_ron: 175.50
+                  free_enrollment_count: 8
+                  settings_updated_at: "2025-09-30T10:15:00Z"
+                  updated_by_admin: "admin_user"
+                message: "Settings updated successfully"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/BusinessLogicError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    JWTAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token with Admin role required
+
+  schemas:
+    SettingsResponse:
+      type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/SchoolSettings'
+
+    SettingsUpdateResponse:
+      type: object
+      required:
+        - success
+        - data
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/SchoolSettings'
+        message:
+          type: string
+          example: "Settings updated successfully"
+
+    SchoolSettings:
+      type: object
+      required:
+        - school_id
+        - default_monthly_fee_ron
+        - free_enrollment_count
+      properties:
+        school_id:
+          type: string
+          description: Unique identifier for the school
+          example: "school_123"
+        default_monthly_fee_ron:
+          type: number
+          format: decimal
+          minimum: 0
+          maximum: 99999.99
+          description: Default monthly fee in Romanian Lei
+          example: 150.00
+        free_enrollment_count:
+          type: integer
+          minimum: 0
+          maximum: 9999
+          description: Number of free empty enrollments available
+          example: 5
+        settings_updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when settings were last updated
+          example: "2025-09-30T10:00:00Z"
+        updated_by_admin:
+          type: string
+          nullable: true
+          description: Username of admin who last updated settings
+          example: "admin_user"
+
+    SettingsUpdateRequest:
+      type: object
+      required:
+        - default_monthly_fee_ron
+        - free_enrollment_count
+      properties:
+        default_monthly_fee_ron:
+          type: number
+          format: decimal
+          minimum: 0
+          maximum: 99999.99
+          description: Default monthly fee in Romanian Lei
+          example: 175.50
+        free_enrollment_count:
+          type: integer
+          minimum: 0
+          maximum: 9999
+          description: Number of free empty enrollments available
+          example: 8
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - code
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Error category
+          example: "Bad Request"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Validation failed"
+        code:
+          type: string
+          description: Machine-readable error code
+          example: "VALIDATION_ERROR"
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO timestamp when error occurred
+          example: "2025-09-30T10:00:00Z"
+        details:
+          type: object
+          description: Additional error details (for validation errors)
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+  responses:
+    Unauthorized:
+      description: Authentication required or insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Unauthorized"
+            message: "Admin role required"
+            code: "ADMIN_ROLE_REQUIRED"
+            timestamp: "2025-09-30T10:00:00Z"
+
+    SchoolNotFound:
+      description: School not found for current admin
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Not Found"
+            message: "School settings not found"
+            code: "SCHOOL_NOT_FOUND"
+            timestamp: "2025-09-30T10:00:00Z"
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Bad Request"
+            message: "Validation failed"
+            code: "VALIDATION_ERROR"
+            timestamp: "2025-09-30T10:00:00Z"
+            details:
+              default_monthly_fee_ron: ["Must be non-negative"]
+              free_enrollment_count: ["Must be non-negative integer"]
+
+    BusinessLogicError:
+      description: Business rule violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Unprocessable Entity"
+            message: "Monthly fee exceeds maximum allowed"
+            code: "FEE_LIMIT_EXCEEDED"
+            timestamp: "2025-09-30T10:00:00Z"
+
+    RateLimitExceeded:
+      description: Too many requests
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Request limit per window
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Time when rate limit resets (Unix timestamp)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Too Many Requests"
+            message: "Rate limit exceeded"
+            code: "RATE_LIMIT_EXCEEDED"
+            timestamp: "2025-09-30T10:00:00Z"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Internal Server Error"
+            message: "Database connection failed"
+            code: "DATABASE_ERROR"
+            timestamp: "2025-09-30T10:00:00Z"
+
+  parameters:
+    SchoolId:
+      name: school_id
+      in: path
+      required: true
+      description: Unique identifier for the school
+      schema:
+        type: string
+      example: "school_123"
+
+tags:
+  - name: Settings
+    description: School settings management operations

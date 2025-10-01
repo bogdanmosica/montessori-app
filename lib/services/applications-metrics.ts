@@ -1,5 +1,5 @@
 import { db } from '../db/drizzle';
-import { applications, children, schoolSettings, enrollments } from '../db/schema';
+import { applications, children, schoolSettings, enrollments, teams } from '../db/schema';
 import { eq, count, and, or } from 'drizzle-orm';
 
 export interface ApplicationsMetrics {
@@ -53,15 +53,15 @@ export async function getApplicationsMetrics(schoolId: number): Promise<Applicat
     const totalApplications = totalApplicationsResult[0]?.count || 0;
 
     // Get school capacity settings
-    const schoolSettingsResult = await db
+    const schoolResult = await db
       .select({
-        totalCapacity: schoolSettings.totalCapacity,
+        totalCapacity: teams.maximumCapacity,
       })
-      .from(schoolSettings)
-      .where(eq(schoolSettings.schoolId, schoolId))
+      .from(teams)
+      .where(eq(teams.id, schoolId))
       .limit(1);
 
-    const totalCapacity = schoolSettingsResult[0]?.totalCapacity || 200; // Default fallback
+    const totalCapacity = schoolResult[0]?.totalCapacity || 200; // Default fallback
     const capacityPercentage = totalCapacity > 0 ? Math.round((activeEnrollments / totalCapacity) * 100 * 10) / 10 : 0;
 
     return {

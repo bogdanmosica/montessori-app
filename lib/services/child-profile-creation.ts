@@ -1,5 +1,6 @@
 import { db } from '../db/drizzle';
-import { children, enrollments } from '../db/schema';
+import { children, enrollments, teams, schoolSettings } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import type { NewChild, Child } from '../db/schema';
 
 export interface CreateChildData {
@@ -8,6 +9,7 @@ export interface CreateChildData {
   firstName: string;
   lastName: string;
   dateOfBirth: Date;
+  monthlyFee?: number; // in cents, optional - will use school default if not provided
   gender?: string | null;
   startDate: Date;
   specialNeeds?: string | null;
@@ -22,12 +24,43 @@ export interface CreateChildData {
 export async function createChildProfile(data: CreateChildData, tx?: any): Promise<Child> {
   const dbInstance = tx || db;
 
+  // Get monthly fee - use provided value or fetch from school settings
+  let monthlyFee = data.monthlyFee ?? 0;
+
+  if (monthlyFee === 0) {
+    // Try to get default from school settings
+    const settings = await dbInstance
+      .select()
+      .from(schoolSettings)
+      .where(eq(schoolSettings.schoolId, data.schoolId))
+      .limit(1);
+
+    if (settings[0]?.baseFeePerChild) {
+      monthlyFee = settings[0].baseFeePerChild;
+    }
+
+    // If still 0, try to get from team settings
+    if (monthlyFee === 0) {
+      const team = await dbInstance
+        .select()
+        .from(teams)
+        .where(eq(teams.id, data.schoolId))
+        .limit(1);
+
+      if (team[0]?.defaultMonthlyFeeRon) {
+        // Convert RON to cents
+        monthlyFee = Math.round(parseFloat(team[0].defaultMonthlyFeeRon) * 100);
+      }
+    }
+  }
+
   const childData: NewChild = {
     schoolId: data.schoolId,
     applicationId: data.applicationId,
     firstName: data.firstName,
     lastName: data.lastName,
     dateOfBirth: data.dateOfBirth,
+    monthlyFee: monthlyFee,
     gender: data.gender,
     enrollmentStatus: data.enrollmentStatus,
     startDate: data.startDate,
