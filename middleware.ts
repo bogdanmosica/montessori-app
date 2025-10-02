@@ -6,12 +6,14 @@ import { AccessLogService } from '@/lib/services/access-log-service';
 
 const protectedRoutes = '/dashboard';
 const adminRoutes = '/admin';
+const teacherRoutes = '/teacher';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get('session');
   const isProtectedRoute = pathname.startsWith(protectedRoutes);
   const isAdminRoute = pathname.startsWith(adminRoutes);
+  const isTeacherRoute = pathname.startsWith(teacherRoutes);
 
   // Handle admin route protection first
   if (isAdminRoute) {
@@ -85,6 +87,78 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Handle teacher route protection
+  if (isTeacherRoute) {
+    try {
+      if (!sessionCookie) {
+        // Unauthenticated user trying to access teacher route
+        await logAccessAttempt({
+          request,
+          userId: null,
+          teamId: null,
+          route: pathname,
+          success: false,
+        });
+
+        return NextResponse.redirect(new URL('/sign-in', request.url));
+      }
+
+      const session = await verifyToken(sessionCookie.value);
+
+      if (!session?.user) {
+        // Invalid session
+        await logAccessAttempt({
+          request,
+          userId: null,
+          teamId: null,
+          route: pathname,
+          success: false,
+        });
+
+        return NextResponse.redirect(new URL('/sign-in', request.url));
+      }
+
+      const { user } = session;
+
+      // Check if user has teacher role (admins can also access for testing/management)
+      if (user.role !== UserRole.TEACHER && user.role !== UserRole.ADMIN) {
+        // Non-teacher/non-admin user trying to access teacher route
+        await logAccessAttempt({
+          request,
+          userId: user.id,
+          teamId: user.teamId,
+          route: pathname,
+          success: false,
+        });
+
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
+      }
+
+      // Teacher/Admin user accessing teacher route - log successful access
+      await logAccessAttempt({
+        request,
+        userId: user.id,
+        teamId: user.teamId,
+        route: pathname,
+        success: true,
+      });
+
+      // Continue with session refresh logic below
+    } catch (error) {
+      console.error('Teacher route middleware error:', error);
+
+      await logAccessAttempt({
+        request,
+        userId: null,
+        teamId: null,
+        route: pathname,
+        success: false,
+      });
+
+      return NextResponse.redirect(new URL('/sign-in', request.url));
+    }
+  }
+
   // Handle general protected routes
   if (isProtectedRoute && !sessionCookie) {
     return NextResponse.redirect(new URL('/sign-in', request.url));
@@ -112,7 +186,7 @@ export async function middleware(request: NextRequest) {
     } catch (error) {
       console.error('Error updating session:', error);
       res.cookies.delete('session');
-      if (isProtectedRoute || isAdminRoute) {
+      if (isProtectedRoute || isAdminRoute || isTeacherRoute) {
         return NextResponse.redirect(new URL('/sign-in', request.url));
       }
     }

@@ -28,6 +28,9 @@ export * from './schema/staff-activities';
 export * from './schema/events';
 export * from './schema/payment-activities';
 
+// Import teacher schemas
+export * from './schema/teachers';
+
 export const userRoleEnum = pgEnum('user_role', ['parent', 'teacher', 'admin']);
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['enrolled', 'pending', 'waitlisted', 'withdrawn']);
 export const paymentStatusEnum = pgEnum('payment_status', ['current', 'pending', 'overdue', 'partial']);
