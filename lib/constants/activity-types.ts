@@ -26,3 +26,84 @@ export const ACTIVITY_TYPE_OPTIONS = Object.values(ActivityType).map(type => ({
   value: type,
   label: ACTIVITY_TYPE_LABELS[type]
 }));
+
+// Trend Widget Activity Types
+export type TrendActivityType =
+  | 'applications'
+  | 'enrollments'
+  | 'payments'
+  | 'staff_activities'
+  | 'events';
+
+export const TREND_ACTIVITY_TYPES: TrendActivityType[] = [
+  'applications',
+  'enrollments',
+  'payments',
+  'staff_activities',
+  'events'
+];
+
+export const TREND_ACTIVITY_LABELS: Record<TrendActivityType, string> = {
+  applications: 'Applications',
+  enrollments: 'Enrollments',
+  payments: 'Payments',
+  staff_activities: 'Staff Activities',
+  events: 'Events'
+};
+
+export const TREND_ACTIVITY_COLORS: Record<TrendActivityType, string> = {
+  applications: '#3b82f6', // blue
+  enrollments: '#10b981', // green
+  payments: '#f59e0b', // amber
+  staff_activities: '#8b5cf6', // purple
+  events: '#ec4899' // pink
+};
+
+// Staff Activity Types
+export enum StaffActivityType {
+  HIRE = 'hire',
+  PROMOTION = 'promotion',
+  TRAINING = 'training',
+  EVALUATION = 'evaluation',
+  DEPARTURE = 'departure'
+}
+
+export const STAFF_ACTIVITY_LABELS: Record<StaffActivityType, string> = {
+  [StaffActivityType.HIRE]: 'New Hire',
+  [StaffActivityType.PROMOTION]: 'Promotion',
+  [StaffActivityType.TRAINING]: 'Training',
+  [StaffActivityType.EVALUATION]: 'Evaluation',
+  [StaffActivityType.DEPARTURE]: 'Departure'
+};
+
+// Event Types
+export enum EventType {
+  MEETING = 'meeting',
+  CEREMONY = 'ceremony',
+  TRAINING = 'training',
+  SOCIAL = 'social',
+  ACADEMIC = 'academic'
+}
+
+export const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  [EventType.MEETING]: 'Meeting',
+  [EventType.CEREMONY]: 'Ceremony',
+  [EventType.TRAINING]: 'Training',
+  [EventType.SOCIAL]: 'Social Event',
+  [EventType.ACADEMIC]: 'Academic Event'
+};
+
+// Payment Activity Types (extending existing payment tracking)
+export enum PaymentActivityType {
+  TUITION = 'tuition',
+  REGISTRATION = 'registration',
+  MATERIALS = 'materials',
+  OTHER = 'other'
+}
+
+export const PAYMENT_ACTIVITY_LABELS: Record<PaymentActivityType, string> = {
+  [PaymentActivityType.TUITION]: 'Tuition',
+  [PaymentActivityType.REGISTRATION]: 'Registration Fee',
+  [PaymentActivityType.MATERIALS]: 'Materials Fee',
+  [PaymentActivityType.OTHER]: 'Other'
+};

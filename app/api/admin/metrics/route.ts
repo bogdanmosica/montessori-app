@@ -4,10 +4,18 @@ import { unstable_cache } from 'next/cache';
 import { auth } from '@/lib/auth/config';
 import { getDashboardMetrics, validateSchoolAccess } from '@/app/admin/dashboard/server/metrics';
 import { getSuperAdminMetrics } from '@/app/admin/dashboard/server/super-admin-metrics';
-import { requireAdminPermissions, shouldShowAggregatedView, getMetricsCacheKey } from '@/lib/auth/dashboard-context';
+import { requireAdminPermissions, shouldShowAggregatedView, getMetricsCacheKey, logTrendDataAccess } from '@/lib/auth/dashboard-context';
 import { RATE_LIMITS, DASHBOARD_CACHE_TTL } from '@/app/admin/dashboard/constants';
 import type { DashboardApiResponse } from '@/lib/types/dashboard';
 import { UserRole } from '@/lib/constants/user-roles';
+import { validateTrendsQuery } from '@/lib/validations/trends-validation';
+import { ActivityAggregationService } from '@/lib/services/activity-aggregation';
+import { activityCache } from '@/lib/services/activity-cache';
+import { getWeeklyDateRange, getCustomDateRange } from '@/lib/utils/date-range';
+import { ERROR_MESSAGES, ERROR_CODES } from '@/lib/constants/error-messages';
+import { teams } from '@/lib/db/schema';
+import { db } from '@/lib/db';
+import { eq } from 'drizzle-orm';
 
 // Rate limiting store (in production, use Redis or similar)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -84,6 +92,15 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') as 'week' | 'month' | 'quarter' || 'week';
     const includeAlerts = searchParams.get('includeAlerts') !== 'false';
     const includeTrends = searchParams.get('includeTrends') !== 'false';
+
+    // New trend parameters
+    const trendType = searchParams.get('trend') as 'weekly' | 'custom' | null;
+    const startDate = searchParams.get('start_date');
+    const endDate = searchParams.get('end_date');
+    const activityTypes = searchParams.get('activity_types');
+
+    // Check if this is a trends-specific request
+    const isTrendsRequest = trendType !== null;
 
     // Super Admin gets aggregated view with caching
     if (shouldShowAggregatedView(user.role)) {
@@ -193,6 +210,190 @@ export async function GET(request: NextRequest) {
         } as DashboardApiResponse,
         { status: 403 }
       );
+    }
+
+    // Handle trends-specific request
+    if (isTrendsRequest) {
+      // Validate trend parameters
+      const validation = validateTrendsQuery({
+        trend: trendType,
+        start_date: startDate,
+        end_date: endDate,
+        activity_types: activityTypes,
+      });
+
+      if (!validation.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: ERROR_CODES.VALIDATION_ERROR,
+              message: ERROR_MESSAGES.VALIDATION_ERROR,
+              details: validation.error
+            },
+            timestamp: new Date().toISOString()
+          },
+          { status: 400 }
+        );
+      }
+
+      // Log trend data access for audit trail
+      await logTrendDataAccess(user.id, schoolId, {
+        trend: validation.data!.trend || 'weekly',
+        start_date: validation.data!.start_date,
+        end_date: validation.data!.end_date,
+        activity_types: validation.data!.activity_types as any,
+      });
+
+      try {
+        // Determine date range
+        const dateRange = validation.data!.trend === 'weekly'
+          ? getWeeklyDateRange()
+          : getCustomDateRange(
+              new Date(validation.data!.start_date!),
+              new Date(validation.data!.end_date!)
+            );
+
+        // Check cache first
+        const cachedData = activityCache.getDailyMetrics(
+          parseInt(schoolId),
+          dateRange.startDate,
+          dateRange.endDate,
+          validation.data!.activity_types as any
+        );
+
+        if (cachedData) {
+          // Get school info
+          const schoolInfo = await db.select({
+            id: teams.id,
+            name: teams.name
+          }).from(teams).where(eq(teams.id, parseInt(schoolId))).limit(1);
+
+          // Get summary from cache or calculate
+          let summary = activityCache.getSummaryMetrics(
+            parseInt(schoolId),
+            dateRange.startDate,
+            dateRange.endDate
+          );
+
+          if (!summary) {
+            summary = await ActivityAggregationService.getSummaryMetrics(
+              parseInt(schoolId),
+              dateRange.startDate,
+              dateRange.endDate
+            );
+            activityCache.setSummaryMetrics(
+              parseInt(schoolId),
+              dateRange.startDate,
+              dateRange.endDate,
+              summary
+            );
+          }
+
+          return NextResponse.json(
+            {
+              success: true,
+              data: {
+                date_range: {
+                  start_date: dateRange.startDate.toISOString().split('T')[0],
+                  end_date: dateRange.endDate.toISOString().split('T')[0],
+                  total_days: dateRange.totalDays
+                },
+                tenant_info: {
+                  tenant_id: schoolId,
+                  school_name: schoolInfo[0]?.name || 'Unknown School'
+                },
+                metrics: cachedData,
+                summary
+              },
+              timestamp: new Date().toISOString()
+            },
+            {
+              status: 200,
+              headers: {
+                'Cache-Control': 'private, max-age=300',
+                'X-Cache-Status': 'HIT',
+                'X-Tenant-ID': schoolId
+              }
+            }
+          );
+        }
+
+        // Fetch fresh data
+        const [metrics, summary, schoolInfo] = await Promise.all([
+          ActivityAggregationService.getDailyMetrics(
+            parseInt(schoolId),
+            dateRange.startDate,
+            dateRange.endDate,
+            validation.data!.activity_types as any
+          ),
+          ActivityAggregationService.getSummaryMetrics(
+            parseInt(schoolId),
+            dateRange.startDate,
+            dateRange.endDate
+          ),
+          db.select({
+            id: teams.id,
+            name: teams.name
+          }).from(teams).where(eq(teams.id, parseInt(schoolId))).limit(1)
+        ]);
+
+        // Cache the results
+        activityCache.setDailyMetrics(
+          parseInt(schoolId),
+          dateRange.startDate,
+          dateRange.endDate,
+          validation.data!.activity_types as any,
+          metrics
+        );
+        activityCache.setSummaryMetrics(
+          parseInt(schoolId),
+          dateRange.startDate,
+          dateRange.endDate,
+          summary
+        );
+
+        return NextResponse.json(
+          {
+            success: true,
+            data: {
+              date_range: {
+                start_date: dateRange.startDate.toISOString().split('T')[0],
+                end_date: dateRange.endDate.toISOString().split('T')[0],
+                total_days: dateRange.totalDays
+              },
+              tenant_info: {
+                tenant_id: schoolId,
+                school_name: schoolInfo[0]?.name || 'Unknown School'
+              },
+              metrics,
+              summary
+            },
+            timestamp: new Date().toISOString()
+          },
+          {
+            status: 200,
+            headers: {
+              'Cache-Control': 'private, max-age=300',
+              'X-Cache-Status': 'MISS',
+              'X-Tenant-ID': schoolId
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Error fetching trend metrics:', error);
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+              message: ERROR_MESSAGES.TRENDS_FETCH_FAILED
+            },
+            timestamp: new Date().toISOString()
+          },
+          { status: 500 }
+        );
+      }
     }
 
     try {

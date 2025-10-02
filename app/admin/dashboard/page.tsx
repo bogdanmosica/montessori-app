@@ -15,8 +15,7 @@ import EmptyState from './components/EmptyState';
 
 // Client Components
 import TrendsChart from './components/TrendsChart.client';
-import { RefreshButton } from './components/refresh-button';
-import { SettingsButton } from './components/settings-button';
+import TrendsWidget from './components/TrendsWidget';
 
 // Admin Components
 import AdminNavigation from '@/components/admin/admin-navigation';
@@ -256,8 +255,6 @@ async function SchoolDashboard({ schoolId, context }: { schoolId: string; contex
             <Badge variant="outline" className="text-xs">
               Last updated: {new Date(school.lastUpdated).toLocaleTimeString()}
             </Badge>
-            <RefreshButton />
-            <SettingsButton />
           </div>
         </div>
 
@@ -279,7 +276,10 @@ async function SchoolDashboard({ schoolId, context }: { schoolId: string; contex
             {/* Charts and Trends */}
             <div className="lg:col-span-2 space-y-6">
               <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-                {trends && trends.dataPoints.length > 0 ? (
+                {/* Enhanced trends widget with real data - can be toggled via feature flag */}
+                {process.env.NEXT_PUBLIC_ENHANCED_TRENDS === 'true' ? (
+                  <TrendsWidget schoolId={schoolId} />
+                ) : trends && trends.dataPoints.length > 0 ? (
                   <TrendsChart trends={trends} />
                 ) : (
                   <EmptyState type="trends" />

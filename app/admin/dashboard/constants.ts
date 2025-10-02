@@ -81,3 +81,14 @@ export const TREND_PERIODS = {
   MONTH: 'month',
   QUARTER: 'quarter',
 } as const;
+
+export const ACTIVITY_TREND_CACHE_TTL = {
+  RECENT_DATA: 5 * 60 * 1000, // 5 minutes for data within last 7 days
+  HISTORICAL_DATA: 60 * 60 * 1000, // 1 hour for older data
+} as const;
+
+export const TREND_DATE_RANGE_LIMITS = {
+  MAX_DAYS: 365,
+  MIN_DAYS: 1,
+  DEFAULT_WEEKLY_DAYS: 7,
+} as const;
