@@ -1,17 +1,24 @@
 # Claude Context: Monte SMS - Montessori School Management System
 
 ## Recent Changes
+- 012-initialize-the-teacher: Implemented Teacher module with route group structure, empty pages, RBAC integration, and navigation components
 - 011-extend-the-weekly: Added TypeScript 5.x with Next.js 15 (App Router) + React 19, Drizzle ORM, shadcn/ui, Tailwind CSS, Auth.js
 - 010-admin-dashboard-buttons: Added TypeScript with Next.js 15 (App Router), React 19 + Next.js, React, Drizzle ORM, Auth.js, shadcn/ui, Tailwind CSS
-- 010-admin-dashboard-buttons: Added [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION] + [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
 
 ## Current Project Structure
 
 ### Admin Pages & Navigation
 - **Admin Dashboard** (`/admin/dashboard`) - Metrics, cashflow, capacity overview with quick actions
-- **Admin Applications** (`/admin/applications`) - Student application management with search/filters  
+- **Admin Applications** (`/admin/applications`) - Student application management with search/filters
 - **Navigation Pattern**: Reusing dashboard quick actions as persistent navigation bar
 - **Layout**: `min-h-screen bg-gray-50/30` with `container mx-auto px-4 py-8` for consistency
+
+### Teacher Pages & Navigation
+- **Teacher Dashboard** (`/teacher/dashboard`) - Student metrics and overview (empty state initially)
+- **Teacher Students** (`/teacher/students`) - Student roster management (empty state initially)
+- **Route Structure**: `app/teacher/` with top navigation bar pattern (same as admin)
+- **RBAC**: Middleware enforces Teacher role for all `/teacher/*` routes (Admins also have access for testing/management)
+- **Navigation Pattern**: Top navigation bar with responsive mobile menu, consistent with Admin navigation
 
 ### Architecture
 - **Framework**: Next.js 15 (App Router) with React 19 and TypeScript
@@ -71,11 +78,16 @@ export const adminAccessLogs = pgTable('admin_access_logs', {
 - `app/admin/dashboard/page.tsx` - Main admin dashboard with quick actions pattern
 - `app/admin/applications/page.tsx` - Applications management with search/filtering
 - `app/(dashboard)/dashboard/layout.tsx` - Sidebar navigation pattern for regular dashboard
+- `app/teacher/dashboard/page.tsx` - Teacher dashboard with empty state and top navigation
+- `app/teacher/students/page.tsx` - Student roster with empty state and top navigation
+- `components/teacher/teacher-navigation.tsx` - Teacher top navigation bar component
 - `lib/db/schema.ts` - Database schema with applications, adminAccessLogs, etc.
-- `lib/services/combined-applications-children.ts` - Service for application data
+- `lib/constants/teacher-routes.ts` - Teacher route and navigation constants
+- `lib/types/teacher.ts` - Teacher module type definitions
+- `middleware.ts` - RBAC middleware with Teacher route protection
 
 ## Active Branch
-Currently on branch `005-reuse-the-existing` with admin navigation bar feature in progress.
+Currently on branch `012-initialize-the-teacher` with Teacher module implementation complete.
 
 ---
 *Last Updated: 2025-09-26 | Constitution v1.0.0 | Agent: Claude*

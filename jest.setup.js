@@ -16,10 +16,14 @@ jest.mock('next/cache', () => ({
   revalidateTag: jest.fn(),
 }));
 
-// Mock Auth
-jest.mock('@/lib/auth/config', () => ({
-  auth: jest.fn(),
-}));
+// Mock Auth - only mock if the file exists
+try {
+  jest.mock('@/lib/auth/config', () => ({
+    auth: jest.fn(),
+  }));
+} catch (e) {
+  // Auth config not found, skip mock
+}
 
 // Mock Database
 jest.mock('@/lib/db/drizzle', () => ({
