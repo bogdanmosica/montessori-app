@@ -204,3 +204,96 @@ export interface DashboardContextValue {
   refreshMetrics: () => Promise<void>;
   lastUpdated?: Date;
 }
+
+// Extended types for comprehensive activity tracking
+
+export interface DailyActivityMetric {
+  date: string; // ISO date (YYYY-MM-DD)
+  applications: ActivityBreakdown<ApplicationStatusBreakdown>;
+  enrollments: ActivityBreakdown<EnrollmentStatusBreakdown>;
+  payments: PaymentActivityBreakdown;
+  staff_activities: ActivityBreakdown<StaffActivityBreakdown>;
+  events: ActivityBreakdown<EventTypeBreakdown>;
+}
+
+export interface ActivityBreakdown<T> {
+  count: number;
+  breakdown: T;
+}
+
+export interface ApplicationStatusBreakdown {
+  pending: number;
+  approved: number;
+  rejected: number;
+}
+
+export interface EnrollmentStatusBreakdown {
+  active: number;
+  inactive: number;
+  waitlisted: number;
+}
+
+export interface PaymentActivityBreakdown {
+  count: number;
+  total_amount: number;
+  breakdown: {
+    tuition: number;
+    registration: number;
+    materials: number;
+    other: number;
+  };
+}
+
+export interface StaffActivityBreakdown {
+  hire: number;
+  promotion: number;
+  training: number;
+  evaluation: number;
+  departure: number;
+}
+
+export interface EventTypeBreakdown {
+  meeting: number;
+  ceremony: number;
+  training: number;
+  social: number;
+  academic: number;
+}
+
+export interface TrendsApiResponse {
+  success: boolean;
+  data: {
+    date_range: {
+      start_date: string;
+      end_date: string;
+      total_days: number;
+    };
+    tenant_info: {
+      tenant_id: string;
+      school_name: string;
+    };
+    metrics: DailyActivityMetric[];
+    summary: {
+      total_applications: number;
+      total_enrollments: number;
+      total_payments: number;
+      total_payment_amount: number;
+      total_staff_activities: number;
+      total_events: number;
+    };
+  };
+  timestamp: string;
+}
+
+export interface TrendsErrorResponse {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: Array<{
+      field: string;
+      issue: string;
+    }>;
+  };
+  timestamp: string;
+}

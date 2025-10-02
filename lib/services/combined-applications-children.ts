@@ -142,6 +142,7 @@ export async function getCombinedApplicationsAndChildren(params: CombinedListPar
     }
 
     // Get children with their parent information
+    // First try to get primary contact, then fallback to any parent
     const childrenResults = await db
       .select({
         id: children.id,
@@ -151,7 +152,8 @@ export async function getCombinedApplicationsAndChildren(params: CombinedListPar
         date_of_birth: children.dateOfBirth,
         start_date: children.startDate,
         created_at: children.createdAt,
-        // Get primary parent info
+        // Get parent info from the relationship
+        parent_id: parentChildRelationships.parentId,
         parent_first_name: parentProfiles.firstName,
         parent_last_name: parentProfiles.lastName,
         parent_email: parentProfiles.email,
@@ -159,16 +161,21 @@ export async function getCombinedApplicationsAndChildren(params: CombinedListPar
       .from(children)
       .leftJoin(
         parentChildRelationships,
-        and(
-          eq(parentChildRelationships.childId, children.id),
-          eq(parentChildRelationships.primaryContact, true)
-        )
+        eq(parentChildRelationships.childId, children.id)
       )
       .leftJoin(parentProfiles, eq(parentProfiles.id, parentChildRelationships.parentId))
       .where(whereConditions)
       .orderBy(desc(children.createdAt));
 
-    const childrenItems: CombinedListItem[] = childrenResults.map(child => ({
+    // Group by child ID and take the first parent found (since we removed primary contact filter)
+    const childrenMap = new Map<string, typeof childrenResults[0]>();
+    for (const child of childrenResults) {
+      if (!childrenMap.has(child.id)) {
+        childrenMap.set(child.id, child);
+      }
+    }
+
+    const childrenItems: CombinedListItem[] = Array.from(childrenMap.values()).map(child => ({
       id: child.id,
       type: 'enrolled' as const,
       status: child.enrollment_status,
@@ -176,9 +183,9 @@ export async function getCombinedApplicationsAndChildren(params: CombinedListPar
       child_last_name: child.last_name,
       child_date_of_birth: child.date_of_birth.toISOString().split('T')[0],
       start_date: child.start_date.toISOString().split('T')[0],
-      parent1_first_name: child.parent_first_name || 'Unknown',
+      parent1_first_name: child.parent_first_name || 'No',
       parent1_last_name: child.parent_last_name || 'Parent',
-      parent1_email: child.parent_email || 'N/A',
+      parent1_email: child.parent_email || 'No email',
       submitted_at: child.created_at.toISOString(),
       processed_at: null, // Children don't have a processed_at date
     }));

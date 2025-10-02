@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 
 /**
  * Client component for dashboard refresh functionality
@@ -13,7 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 export function RefreshButton() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
-  const { toast } = useToast();
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -22,21 +20,12 @@ export function RefreshButton() {
       // Refresh the current route to trigger server component re-render
       router.refresh();
 
-      // Show success feedback after a brief delay
+      // Reset state after a brief delay
       setTimeout(() => {
-        toast({
-          title: 'Dashboard Refreshed',
-          description: 'Metrics have been updated successfully.',
-        });
         setIsRefreshing(false);
-      }, 500);
+      }, 1000);
     } catch (error) {
       console.error('Error refreshing dashboard:', error);
-      toast({
-        title: 'Refresh Failed',
-        description: 'Unable to refresh dashboard. Please try again.',
-        variant: 'destructive',
-      });
       setIsRefreshing(false);
     }
   };

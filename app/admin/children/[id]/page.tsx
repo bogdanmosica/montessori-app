@@ -201,9 +201,11 @@ async function ChildDetailsContent({ params }: ChildDetailsProps) {
           <Badge className={getStatusColor(childWithParents.enrollmentStatus)}>
             {childWithParents.enrollmentStatus}
           </Badge>
-          <Button size="sm">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Profile
+          <Button size="sm" asChild>
+            <Link href={`/admin/children/${childWithParents.id}/edit`}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Profile
+            </Link>
           </Button>
         </div>
       </div>
@@ -292,14 +294,30 @@ async function ChildDetailsContent({ params }: ChildDetailsProps) {
           {/* Parent/Guardian Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Parent/Guardian Information
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Parent/Guardian Information
+                </CardTitle>
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/admin/children/${childWithParents.id}/parents`}>
+                    <Users className="h-4 w-4 mr-2" />
+                    Manage Parents
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {childWithParents.parents.length === 0 ? (
-                <p className="text-gray-500 italic">No parent information available</p>
+                <div className="text-center py-6">
+                  <p className="text-gray-500 italic mb-4">No parent information available</p>
+                  <Button size="sm" asChild>
+                    <Link href={`/admin/children/${childWithParents.id}/parents`}>
+                      <Users className="h-4 w-4 mr-2" />
+                      Add Parent
+                    </Link>
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-6">
                   {childWithParents.parents.map((parent, index) => (
@@ -395,9 +413,17 @@ async function ChildDetailsContent({ params }: ChildDetailsProps) {
               <CardTitle className="text-lg">Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Profile
+              <Button className="w-full" size="sm" asChild>
+                <Link href={`/admin/children/${childWithParents.id}/edit`}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full" size="sm" asChild>
+                <Link href={`/admin/children/${childWithParents.id}/parents`}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Manage Parents
+                </Link>
               </Button>
               <Button variant="outline" className="w-full" size="sm" asChild>
                 <Link href={`/admin/enrollments/new?childId=${childWithParents.id}`}>
@@ -406,9 +432,6 @@ async function ChildDetailsContent({ params }: ChildDetailsProps) {
               </Button>
               <Button variant="outline" className="w-full" size="sm">
                 View Enrollments
-              </Button>
-              <Button variant="outline" className="w-full" size="sm">
-                Contact Parents
               </Button>
             </CardContent>
           </Card>

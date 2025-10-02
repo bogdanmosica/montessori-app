@@ -1,9 +1,9 @@
 # Claude Context: Monte SMS - Montessori School Management System
 
 ## Recent Changes
+- 011-extend-the-weekly: Added TypeScript 5.x with Next.js 15 (App Router) + React 19, Drizzle ORM, shadcn/ui, Tailwind CSS, Auth.js
 - 010-admin-dashboard-buttons: Added TypeScript with Next.js 15 (App Router), React 19 + Next.js, React, Drizzle ORM, Auth.js, shadcn/ui, Tailwind CSS
 - 010-admin-dashboard-buttons: Added [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION] + [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
-- 010-admin-dashboard-buttons: Added TypeScript with Next.js 15 (App Router), React 19 + Next.js, React, Drizzle ORM, Auth.js, shadcn/ui, Tailwind CSS
 
 ## Current Project Structure
 

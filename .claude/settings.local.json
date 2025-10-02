@@ -18,7 +18,9 @@
       "Bash(del check-children-fees.ts)",
       "Bash(del update-children-fees.ts)",
       "Bash(npx playwright:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(findstr:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

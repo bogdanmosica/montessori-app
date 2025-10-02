@@ -60,3 +60,62 @@ export function getRateLimitKey(userId: string, userRole: string): string {
   const rolePrefix = userRole === UserRole.ADMIN ? 'admin' : 'user';
   return `rate-limit:dashboard:${rolePrefix}:${userId}`;
 }
+
+/**
+ * Log trend data access for audit trail
+ * This tracks when admins access trend data for compliance and security
+ */
+export async function logTrendDataAccess(
+  userId: string,
+  schoolId: string,
+  params: {
+    trend: 'weekly' | 'custom';
+    start_date?: string;
+    end_date?: string;
+    activity_types?: string[];
+  }
+): Promise<void> {
+  try {
+    // In production, this would write to adminAccessLogs table or audit service
+    console.log('[AUDIT] Trend Data Access:', {
+      timestamp: new Date().toISOString(),
+      userId,
+      schoolId,
+      action: 'TREND_DATA_ACCESS',
+      params: {
+        trend: params.trend,
+        dateRange: params.start_date && params.end_date
+          ? `${params.start_date} to ${params.end_date}`
+          : 'weekly',
+        activityTypes: params.activity_types?.join(',') || 'all',
+      },
+    });
+
+    // TODO: Implement actual database logging
+    // const { db } = await import('@/lib/db');
+    // const { adminAccessLogs } = await import('@/lib/db/schema');
+    // await db.insert(adminAccessLogs).values({
+    //   schoolId: parseInt(schoolId),
+    //   adminUserId: parseInt(userId),
+    //   actionType: 'TREND_DATA_ACCESS',
+    //   targetType: 'TRENDS',
+    //   targetId: `${params.trend}:${params.start_date || 'weekly'}`,
+    //   details: JSON.stringify(params),
+    // });
+  } catch (error) {
+    // Don't fail the request if logging fails
+    console.error('Failed to log trend data access:', error);
+  }
+}
+
+/**
+ * Check if user has permission to access trend data for specific school
+ */
+export function canAccessTrendData(
+  userRole: string,
+  userSchoolId: string,
+  targetSchoolId: string
+): boolean {
+  // Same as general school data access
+  return canAccessSchoolData(userRole, userSchoolId, targetSchoolId);
+}
