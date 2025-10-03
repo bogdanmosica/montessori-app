@@ -31,6 +31,11 @@ export * from './schema/payment-activities';
 // Import teacher schemas
 export * from './schema/teachers';
 
+// Import progress board schemas
+export * from './schema/lessons';
+export * from './schema/lesson-progress';
+export * from './schema/progress-columns';
+
 export const userRoleEnum = pgEnum('user_role', ['parent', 'teacher', 'admin']);
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['enrolled', 'pending', 'waitlisted', 'withdrawn']);
 export const paymentStatusEnum = pgEnum('payment_status', ['current', 'pending', 'overdue', 'partial']);
@@ -41,7 +46,7 @@ export const subscriptionStateEnum = pgEnum('subscription_state', ['active', 'pa
 export const applicationStatusEnum = pgEnum('application_status', ['PENDING', 'APPROVED', 'REJECTED']);
 export const relationshipTypeEnum = pgEnum('relationship_type', ['MOTHER', 'FATHER', 'GUARDIAN', 'OTHER']);
 export const childEnrollmentStatusEnum = pgEnum('child_enrollment_status', ['ACTIVE', 'INACTIVE', 'WAITLISTED']);
-export const accessLogActionEnum = pgEnum('access_log_action', ['APPLICATION_APPROVED', 'APPLICATION_REJECTED', 'CHILD_CREATED', 'APPLICATION_VIEWED', 'PARENT_LINKED', 'PARENT_UNLINKED']);
+export const accessLogActionEnum = pgEnum('access_log_action', ['APPLICATION_APPROVED', 'APPLICATION_REJECTED', 'CHILD_CREATED', 'APPLICATION_VIEWED', 'PARENT_LINKED', 'PARENT_UNLINKED', 'LESSON_PROGRESS_MOVED', 'LESSON_PROGRESS_LOCKED', 'LESSON_PROGRESS_UNLOCKED', 'LESSON_PROGRESS_CREATED', 'LESSON_PROGRESS_DELETED']);
 export const accessLogTargetEnum = pgEnum('access_log_target', ['APPLICATION', 'CHILD', 'PARENT']);
 
 export const users = pgTable('users', {
