@@ -1,13 +1,15 @@
 export const TEACHER_ROUTES = {
   DASHBOARD: '/teacher/dashboard',
   STUDENTS: '/teacher/students',
-  PROGRESS_BOARD: '/teacher/progress-board'
+  PROGRESS_BOARD: '/teacher/progress-board',
+  ATTENDANCE: '/teacher/attendance'
 } as const;
 
 export const TEACHER_NAVIGATION_LABELS = {
   DASHBOARD: 'Dashboard',
   STUDENTS: 'My Students',
-  PROGRESS_BOARD: 'Progress Board'
+  PROGRESS_BOARD: 'Progress Board',
+  ATTENDANCE: 'Attendance'
 } as const;
 
 export type TeacherRoute = typeof TEACHER_ROUTES[keyof typeof TEACHER_ROUTES];
