@@ -2,7 +2,6 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import RosterEmpty from './components/roster-empty';
-import TeacherNavigation from '@/components/teacher/teacher-navigation';
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { getTeacherStudentRoster } from '@/lib/services/teacher-service';
@@ -38,10 +37,7 @@ export default async function TeacherStudentsPage() {
   };
 
   return (
-    <>
-      <TeacherNavigation />
-      <div className="min-h-screen bg-gray-50/30">
-        <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
           <div className="space-y-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Student Roster</h1>
@@ -140,7 +136,5 @@ export default async function TeacherStudentsPage() {
             )}
           </div>
         </div>
-      </div>
-    </>
   );
 }

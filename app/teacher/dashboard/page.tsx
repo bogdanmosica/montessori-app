@@ -2,7 +2,6 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import DashboardEmpty from './components/dashboard-empty';
-import TeacherNavigation from '@/components/teacher/teacher-navigation';
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { getTeacherDashboardData } from '@/lib/services/teacher-service';
@@ -26,10 +25,7 @@ export default async function TeacherDashboardPage() {
   const hasStudents = metrics.totalStudents > 0;
 
   return (
-    <>
-      <TeacherNavigation />
-      <div className="min-h-screen bg-gray-50/30">
-        <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
           <div className="space-y-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h1>
@@ -116,7 +112,5 @@ export default async function TeacherDashboardPage() {
             )}
           </div>
         </div>
-      </div>
-    </>
   );
 }

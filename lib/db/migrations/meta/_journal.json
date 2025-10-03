@@ -57,6 +57,13 @@
       "when": 1759407780438,
       "tag": "0007_fancy_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1759441510774,
+      "tag": "0008_empty_chat",
+      "breakpoints": true
     }
   ]
 }

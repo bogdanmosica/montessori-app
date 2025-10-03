@@ -1,0 +1,528 @@
+openapi: 3.0.3
+info:
+  title: Teacher Progress Board API
+  version: 1.0.0
+  description: API for managing lesson progress tracking in Kanban board format
+
+paths:
+  /api/teacher/progress-board:
+    get:
+      summary: Get progress board data
+      tags: [Progress Board]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: student_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by specific student
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by lesson category
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [not_started, in_progress, completed, on_hold]
+          description: Filter by progress status
+      responses:
+        '200':
+          description: Progress board data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressBoardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/teacher/progress-board/cards:
+    post:
+      summary: Create new progress card
+      tags: [Progress Cards]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCardRequest'
+      responses:
+        '201':
+          description: Card created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/teacher/progress-board/cards/{cardId}/move:
+    patch:
+      summary: Move card to different status
+      tags: [Progress Cards]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveCardRequest'
+      responses:
+        '200':
+          description: Card moved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/teacher/progress-board/cards/{cardId}/lock:
+    post:
+      summary: Lock card for editing
+      tags: [Card Locking]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Card locked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LockResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      summary: Unlock card
+      tags: [Card Locking]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Card unlocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnlockResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/teacher/progress-board/batch-move:
+    post:
+      summary: Move multiple cards in batch
+      tags: [Progress Cards]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchMoveRequest'
+      responses:
+        '200':
+          description: Batch move results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchMoveResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/teacher/progress-board/cards/{cardId}:
+    delete:
+      summary: Delete progress card
+      tags: [Progress Cards]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Card deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ProgressCard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        lesson_id:
+          type: string
+          format: uuid
+        lesson_title:
+          type: string
+        lesson_category:
+          type: string
+        student_id:
+          type: string
+          format: uuid
+          nullable: true
+        student_name:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [not_started, in_progress, completed, on_hold]
+        position:
+          type: integer
+          minimum: 0
+        locked_by:
+          type: string
+          format: uuid
+          nullable: true
+        locked_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+
+    ProgressColumn:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status_value:
+          type: string
+        position:
+          type: integer
+          minimum: 0
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgressCard'
+
+    FilterOptions:
+      type: object
+      properties:
+        students:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+        categories:
+          type: array
+          items:
+            type: string
+
+    ProgressBoardResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            columns:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProgressColumn'
+            filters:
+              $ref: '#/components/schemas/FilterOptions'
+
+    CreateCardRequest:
+      type: object
+      required:
+        - lesson_id
+        - status
+      properties:
+        lesson_id:
+          type: string
+          format: uuid
+        student_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [not_started, in_progress, completed, on_hold]
+          default: not_started
+
+    MoveCardRequest:
+      type: object
+      required:
+        - new_status
+        - new_position
+        - version
+      properties:
+        new_status:
+          type: string
+          enum: [not_started, in_progress, completed, on_hold]
+        new_position:
+          type: integer
+          minimum: 0
+        version:
+          type: string
+          format: date-time
+
+    BatchMoveRequest:
+      type: object
+      required:
+        - moves
+      properties:
+        moves:
+          type: array
+          items:
+            type: object
+            required:
+              - card_id
+              - new_status
+              - new_position
+              - version
+            properties:
+              card_id:
+                type: string
+                format: uuid
+              new_status:
+                type: string
+                enum: [not_started, in_progress, completed, on_hold]
+              new_position:
+                type: integer
+                minimum: 0
+              version:
+                type: string
+                format: date-time
+
+    CardResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/ProgressCard'
+
+    LockResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            locked_by:
+              type: string
+              format: uuid
+            locked_at:
+              type: string
+              format: date-time
+            expires_at:
+              type: string
+              format: date-time
+
+    UnlockResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            locked_by:
+              type: string
+              nullable: true
+            locked_at:
+              type: string
+              nullable: true
+
+    BatchMoveResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            updated_cards:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                  position:
+                    type: integer
+                  updated_at:
+                    type: string
+                    format: date-time
+            failed_moves:
+              type: array
+              items:
+                type: object
+                properties:
+                  card_id:
+                    type: string
+                    format: uuid
+                  error:
+                    type: string
+                  code:
+                    type: string
+
+    DeleteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            deleted_id:
+              type: string
+              format: uuid
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
