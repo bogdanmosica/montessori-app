@@ -13,7 +13,8 @@ import {
   X,
   Home,
   LogOut,
-  Kanban
+  Kanban,
+  ClipboardCheck
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -94,6 +95,12 @@ const navigationItems: NavigationItem[] = [
     href: TEACHER_ROUTES.STUDENTS,
     label: TEACHER_NAVIGATION_LABELS.STUDENTS,
     icon: <Users className="h-4 w-4" />,
+    isEnabled: true
+  },
+  {
+    href: TEACHER_ROUTES.ATTENDANCE,
+    label: TEACHER_NAVIGATION_LABELS.ATTENDANCE,
+    icon: <ClipboardCheck className="h-4 w-4" />,
     isEnabled: true
   },
   {

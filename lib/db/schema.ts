@@ -12,30 +12,6 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
-// Import enrollments schema
-export * from './schema/enrollments';
-
-// Import payment schemas
-export * from './schema/payment-record';
-export * from './schema/payment-method';
-export * from './schema/invoice';
-export * from './schema/invoice-line-item';
-export * from './schema/payment-alert';
-export * from './schema/access-log';
-
-// Import activity tracking schemas
-export * from './schema/staff-activities';
-export * from './schema/events';
-export * from './schema/payment-activities';
-
-// Import teacher schemas
-export * from './schema/teachers';
-
-// Import progress board schemas
-export * from './schema/lessons';
-export * from './schema/lesson-progress';
-export * from './schema/progress-columns';
-
 export const userRoleEnum = pgEnum('user_role', ['parent', 'teacher', 'admin']);
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['enrolled', 'pending', 'waitlisted', 'withdrawn']);
 export const paymentStatusEnum = pgEnum('payment_status', ['current', 'pending', 'overdue', 'partial']);
@@ -296,6 +272,33 @@ export const payments = pgTable('payments', {
   status: varchar('status', { length: 20 }).notNull().default('pending'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+// Import enrollments schema
+export * from './schema/enrollments';
+
+// Import payment schemas
+export * from './schema/payment-record';
+export * from './schema/payment-method';
+export * from './schema/invoice';
+export * from './schema/invoice-line-item';
+export * from './schema/payment-alert';
+export * from './schema/access-log';
+
+// Import activity tracking schemas
+export * from './schema/staff-activities';
+export * from './schema/events';
+export * from './schema/payment-activities';
+
+// Import teacher schemas
+export * from './schema/teachers';
+
+// Import progress board schemas
+export * from './schema/lessons';
+export * from './schema/lesson-progress';
+export * from './schema/progress-columns';
+
+// Import attendance schema
+export * from './schema/attendance';
 
 export const teamsRelations = relations(teams, ({ many, one }) => ({
   teamMembers: many(teamMembers),
