@@ -1,10 +1,13 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import RosterEmpty from './components/roster-empty';
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { getTeacherStudentRoster } from '@/lib/services/teacher-service';
+import { getObservationCount } from '@/lib/services/observation-service';
+import Link from 'next/link';
 
 export default async function TeacherStudentsPage() {
   // Get session
@@ -23,6 +26,14 @@ export default async function TeacherStudentsPage() {
 
   const { students, classGroups, totalCount } = rosterData;
   const hasStudents = totalCount > 0;
+
+  // Get observation counts for all students
+  const studentsWithObservationCounts = await Promise.all(
+    students.map(async (student) => {
+      const observationCount = await getObservationCount(student.id);
+      return { ...student, observationCount };
+    })
+  );
 
   // Calculate age helper
   const calculateAge = (dateOfBirth: Date) => {
@@ -66,7 +77,7 @@ export default async function TeacherStudentsPage() {
                     <CardHeader className="space-y-0 pb-2">
                       <CardDescription>Active Students</CardDescription>
                       <CardTitle className="text-2xl">
-                        {students.filter(s => s.enrollmentStatus === 'ACTIVE').length}
+                        {studentsWithObservationCounts.filter(s => s.enrollmentStatus === 'ACTIVE').length}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -78,14 +89,14 @@ export default async function TeacherStudentsPage() {
 
                   <Card>
                     <CardHeader className="space-y-0 pb-2">
-                      <CardDescription>Inactive Students</CardDescription>
+                      <CardDescription>Total Observations</CardDescription>
                       <CardTitle className="text-2xl">
-                        {students.filter(s => s.enrollmentStatus === 'INACTIVE').length}
+                        {studentsWithObservationCounts.reduce((sum, s) => sum + s.observationCount, 0)}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-xs text-muted-foreground">
-                        Temporarily not attending
+                        Across all students
                       </p>
                     </CardContent>
                   </Card>
@@ -101,10 +112,10 @@ export default async function TeacherStudentsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {students.map((student) => (
+                      {studentsWithObservationCounts.map((student) => (
                         <div
                           key={student.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
                         >
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
@@ -123,8 +134,17 @@ export default async function TeacherStudentsPage() {
                               <span>Age: {calculateAge(student.dateOfBirth)}</span>
                               <span>•</span>
                               <span>{student.gender}</span>
+                              <span>•</span>
+                              <span className="text-blue-600 font-medium">
+                                {student.observationCount} {student.observationCount === 1 ? 'observation' : 'observations'}
+                              </span>
                             </div>
                           </div>
+                          <Link href={`/teacher/students/${student.id}`}>
+                            <Button variant="outline" size="sm">
+                              View Profile
+                            </Button>
+                          </Link>
                         </div>
                       ))}
                     </div>

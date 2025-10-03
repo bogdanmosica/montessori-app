@@ -1,9 +1,9 @@
 # Claude Context: Monte SMS - Montessori School Management System
 
 ## Recent Changes
+- 015-develop-student-profiles: Implemented Student Profiles & Observations feature with full CRUD operations, multi-teacher collaboration, and observation tracking. Added observations table, student profile pages, observation management UI, and teacher-student access validation.
 - 014-build-the-attendance: Added TypeScript (strict mode) with Next.js 15 App Router and React 19 + Drizzle ORM, Auth.js, shadcn/ui, Tailwind CSS
 - 013-teacher-progress-board: Added TypeScript with Next.js 15 (App Router) and React 19 + Next.js, React, Drizzle ORM, shadcn/ui, Tailwind CSS, Auth.js
-- 012-initialize-the-teacher: Implemented Teacher module with route group structure, empty pages, RBAC integration, and navigation components
 
 ## Current Project Structure
 
@@ -14,11 +14,13 @@
 - **Layout**: `min-h-screen bg-gray-50/30` with `container mx-auto px-4 py-8` for consistency
 
 ### Teacher Pages & Navigation
-- **Teacher Dashboard** (`/teacher/dashboard`) - Student metrics and overview (empty state initially)
-- **Teacher Students** (`/teacher/students`) - Student roster management (empty state initially)
+- **Teacher Dashboard** (`/teacher/dashboard`) - Student metrics and overview
+- **Teacher Students** (`/teacher/students`) - Student roster with observation counts and profile links
+- **Student Profile** (`/teacher/students/[studentId]`) - Detailed student profile with observations management
 - **Route Structure**: `app/teacher/` with top navigation bar pattern (same as admin)
 - **RBAC**: Middleware enforces Teacher role for all `/teacher/*` routes (Admins also have access for testing/management)
 - **Navigation Pattern**: Top navigation bar with responsive mobile menu, consistent with Admin navigation
+- **Observation Features**: Create, view, and edit observations for assigned students with multi-teacher collaboration support
 
 ### Architecture
 - **Framework**: Next.js 15 (App Router) with React 19 and TypeScript
@@ -35,20 +37,30 @@
 
 ### Database Schema Highlights
 ```typescript
-// Recently fixed schema conflicts
-export const applications = pgTable('applications', {
+// Teacher & Student Management
+export const teachers = pgTable('teachers', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: integer('user_id').references(() => users.id),
   schoolId: integer('school_id').references(() => teams.id),
-  status: applicationStatusEnum('status').default('PENDING'),
-  // ... child and parent information fields
+  // ... teacher details
 });
 
-export const adminAccessLogs = pgTable('admin_access_logs', {
+export const teacherStudentAssignments = pgTable('teacher_student_assignments', {
   id: uuid('id').primaryKey().defaultRandom(),
-  schoolId: integer('school_id').references(() => teams.id),
-  adminUserId: integer('admin_user_id').references(() => users.id),
-  actionType: accessLogActionEnum('action_type'),
-  // ... audit trail fields
+  teacherId: uuid('teacher_id').references(() => teachers.id),
+  studentId: uuid('student_id').references(() => children.id),
+  isActive: boolean('is_active').default(true),
+  // ... assignment details
+});
+
+export const observations = pgTable('observations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  studentId: uuid('student_id').references(() => children.id),
+  teacherId: integer('teacher_id').references(() => users.id),
+  note: text('note').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  // ... no deletion allowed for audit trail
 });
 ```
 
@@ -75,19 +87,41 @@ export const adminAccessLogs = pgTable('admin_access_logs', {
 - **Performance**: Server-first rendering with client interactivity where needed
 
 ## Files to Know
+### Admin Module
 - `app/admin/dashboard/page.tsx` - Main admin dashboard with quick actions pattern
 - `app/admin/applications/page.tsx` - Applications management with search/filtering
-- `app/(dashboard)/dashboard/layout.tsx` - Sidebar navigation pattern for regular dashboard
-- `app/teacher/dashboard/page.tsx` - Teacher dashboard with empty state and top navigation
-- `app/teacher/students/page.tsx` - Student roster with empty state and top navigation
+
+### Teacher Module
+- `app/teacher/dashboard/page.tsx` - Teacher dashboard with metrics
+- `app/teacher/students/page.tsx` - Student roster with observation counts and profile navigation
+- `app/teacher/students/[studentId]/page.tsx` - Student profile page with observations management
+- `app/teacher/students/components/` - Student profile and observation components
 - `components/teacher/teacher-navigation.tsx` - Teacher top navigation bar component
-- `lib/db/schema.ts` - Database schema with applications, adminAccessLogs, etc.
-- `lib/constants/teacher-routes.ts` - Teacher route and navigation constants
-- `lib/types/teacher.ts` - Teacher module type definitions
+
+### API Routes
+- `app/api/teacher/students/route.ts` - GET teacher's assigned students
+- `app/api/teacher/students/[studentId]/route.ts` - GET student profile details
+- `app/api/teacher/students/[studentId]/observations/route.ts` - GET/POST student observations
+- `app/api/teacher/observations/[observationId]/route.ts` - PUT update observation
+
+### Database & Services
+- `lib/db/schema.ts` - Main schema with users, teams, children, etc.
+- `lib/db/schema/observations.ts` - Observations table schema
+- `lib/db/schema/teachers.ts` - Teachers and assignments schema
+- `lib/services/observation-service.ts` - Observation CRUD operations
+- `lib/services/student-service.ts` - Student queries for teachers
+- `lib/auth/teacher-access.ts` - Teacher-student access validation
+- `lib/db/queries/observations.ts` - Multi-tenant observation queries
+
+### Constants & Types
+- `lib/constants/observations.ts` - Observation limits and messages
+- `lib/types/student-types.ts` - Student profile types
+- `lib/types/teacher-api-types.ts` - Teacher API response types
+- `lib/validations/observation-schemas.ts` - Zod validation schemas
 - `middleware.ts` - RBAC middleware with Teacher route protection
 
 ## Active Branch
-Currently on branch `012-initialize-the-teacher` with Teacher module implementation complete.
+Currently on branch `015-develop-student-profiles` with Student Profiles & Observations feature complete.
 
 ---
 *Last Updated: 2025-09-26 | Constitution v1.0.0 | Agent: Claude*

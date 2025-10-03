@@ -300,6 +300,9 @@ export * from './schema/progress-columns';
 // Import attendance schema
 export * from './schema/attendance';
 
+// Import observations schema
+export * from './schema/observations';
+
 export const teamsRelations = relations(teams, ({ many, one }) => ({
   teamMembers: many(teamMembers),
   activityLogs: many(activityLogs),
@@ -395,6 +398,7 @@ export const childrenRelations = relations(children, ({ one, many }) => ({
   }),
   parentRelationships: many(parentChildRelationships),
   enrollments: many('enrollments'),
+  observations: many('observations'),
 }));
 
 export const applicationsRelations = relations(applications, ({ one, many }) => ({
