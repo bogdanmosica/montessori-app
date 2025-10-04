@@ -6,8 +6,7 @@ import {
   payments,
   families,
   teacherActivity,
-  teams,
-  schoolSettings
+  schools
 } from '@/lib/db/schema';
 import { eq, and, gte, lte, count, sum, desc, sql } from 'drizzle-orm';
 import type { TrendData, TrendDataPoint } from '@/lib/types/dashboard';
@@ -337,10 +336,10 @@ export class TrendsService {
       // Get school capacity
       const schoolResult = await db
         .select({
-          totalCapacity: teams.maximumCapacity
+          totalCapacity: schools.maximumCapacity
         })
-        .from(teams)
-        .where(eq(teams.id, parseInt(schoolId)))
+        .from(schools)
+        .where(eq(schools.id, parseInt(schoolId)))
         .limit(1);
 
       const totalCapacity = Number(schoolResult[0]?.totalCapacity || 100);

@@ -9,7 +9,7 @@ import {
   pgEnum,
   index,
 } from 'drizzle-orm/pg-core';
-import { teams } from '../schema';
+import { schools } from '../schema';
 import { users } from '../schema';
 import { relations } from 'drizzle-orm';
 
@@ -32,7 +32,7 @@ export const lessons = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     schoolId: integer('school_id')
       .notNull()
-      .references(() => teams.id),
+      .references(() => schools.id),
     title: varchar('title', { length: 255 }).notNull(),
     description: text('description'),
     category: varchar('category', { length: 100 }).notNull(),
@@ -68,9 +68,9 @@ export const lessons = pgTable(
  * Lessons Relations
  */
 export const lessonsRelations = relations(lessons, ({ one, many }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [lessons.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   creator: one(users, {
     fields: [lessons.createdBy],

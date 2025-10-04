@@ -1,6 +1,6 @@
 // T015: Create teacher activity metrics helpers
 import { db } from '@/lib/db/drizzle';
-import { teacherActivity, teamMembers, users } from '@/lib/db/schema';
+import { teacherActivity, schoolMembers, users } from '@/lib/db/schema';
 import { eq, and, gte, count, sum, avg, desc } from 'drizzle-orm';
 import type { TeacherActivitySnapshot } from '@/lib/types/dashboard';
 import { UserRole } from '@/lib/constants/user-roles';
@@ -13,10 +13,10 @@ export async function getTeacherActivityMetrics(schoolId: string): Promise<Teach
     // Get total teachers in the school
     const totalTeachersQuery = await db
       .select({ count: count() })
-      .from(teamMembers)
-      .leftJoin(users, eq(users.id, teamMembers.userId))
+      .from(schoolMembers)
+      .leftJoin(users, eq(users.id, schoolMembers.userId))
       .where(and(
-        eq(teamMembers.teamId, parseInt(schoolId)),
+        eq(schoolMembers.schoolId, parseInt(schoolId)),
         eq(users.role, UserRole.TEACHER)
       ));
 

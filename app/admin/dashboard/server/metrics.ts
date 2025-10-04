@@ -4,7 +4,7 @@ import { getSecurityAlerts } from './security-alerts';
 import { getTeacherActivityMetrics } from './teacher-metrics';
 import { TrendsService } from '@/lib/services/trends-service';
 import { db } from '@/lib/db';
-import { teams, schoolSettings, children, payments, families } from '@/lib/db/schema';
+import { schools, children, payments, families } from '@/lib/db/schema';
 import { eq, and, sum, count, gte, lt } from 'drizzle-orm';
 import type { DashboardMetrics, TrendData, TrendDataPoint, CashflowMetrics, RevenueBreakdown } from '@/lib/types/dashboard';
 import { UserRole } from '@/lib/constants/user-roles';
@@ -36,8 +36,8 @@ export async function getDashboardMetrics(
     // Get school information
     const schoolData = await db
       .select()
-      .from(teams)
-      .where(eq(teams.id, parseInt(schoolId)))
+      .from(schools)
+      .where(eq(schools.id, parseInt(schoolId)))
       .limit(1);
 
     if (!schoolData[0]) {
@@ -100,8 +100,8 @@ async function getSubscriptionStatus(schoolId: string) {
   try {
     const schoolData = await db
       .select()
-      .from(teams)
-      .where(eq(teams.id, parseInt(schoolId)))
+      .from(schools)
+      .where(eq(schools.id, parseInt(schoolId)))
       .limit(1);
 
     if (!schoolData[0]) {
@@ -252,14 +252,16 @@ async function getMockTrendDataWithRealCalculations(
 async function calculateCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {
   try {
     console.log('🔄 Calculating real cashflow metrics for school:', schoolId);
-    // Get school settings for base fee
-    const schoolSettingsData = await db
-      .select()
-      .from(schoolSettings)
-      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))
+    // Get school settings for base fee from schools table
+    const schoolData = await db
+      .select({
+        baseFeePerChild: schools.baseFeePerChild,
+      })
+      .from(schools)
+      .where(eq(schools.id, parseInt(schoolId)))
       .limit(1);
 
-    const baseFeePerChild = schoolSettingsData[0]?.baseFeePerChild || 65000; // cents
+    const baseFeePerChild = schoolData[0]?.baseFeePerChild || 65000; // cents
 
     // Get all ACTIVE children with their active enrollments to get fee overrides
     const { enrollments: enrollmentsTable } = await import('@/lib/db/schema');

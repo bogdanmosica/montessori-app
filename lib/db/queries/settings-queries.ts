@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { teams } from '@/lib/db/schema';
+import { schools } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -16,16 +16,16 @@ export async function getSchoolSettings(schoolId: number) {
   try {
     const result = await db
       .select({
-        schoolId: teams.id,
-        schoolName: teams.name,
-        defaultMonthlyFeeRon: teams.defaultMonthlyFeeRon,
-        freeEnrollmentCount: teams.freeEnrollmentCount,
-        settingsUpdatedAt: teams.settingsUpdatedAt,
-        createdAt: teams.createdAt,
-        updatedAt: teams.updatedAt,
+        schoolId: schools.id,
+        schoolName: schools.name,
+        defaultMonthlyFeeRon: schools.defaultMonthlyFeeRon,
+        freeEnrollmentCount: schools.freeEnrollmentCount,
+        settingsUpdatedAt: schools.settingsUpdatedAt,
+        createdAt: schools.createdAt,
+        updatedAt: schools.updatedAt,
       })
-      .from(teams)
-      .where(eq(teams.id, schoolId))
+      .from(schools)
+      .where(eq(schools.id, schoolId))
       .limit(1);
 
     if (!result || result.length === 0) {
@@ -48,10 +48,10 @@ export async function getDefaultMonthlyFee(schoolId: number): Promise<number> {
   try {
     const result = await db
       .select({
-        defaultMonthlyFeeRon: teams.defaultMonthlyFeeRon,
+        defaultMonthlyFeeRon: schools.defaultMonthlyFeeRon,
       })
-      .from(teams)
-      .where(eq(teams.id, schoolId))
+      .from(schools)
+      .where(eq(schools.id, schoolId))
       .limit(1);
 
     if (!result || result.length === 0) {
@@ -75,10 +75,10 @@ export async function getFreeEnrollmentCount(schoolId: number): Promise<number> 
   try {
     const result = await db
       .select({
-        freeEnrollmentCount: teams.freeEnrollmentCount,
+        freeEnrollmentCount: schools.freeEnrollmentCount,
       })
-      .from(teams)
-      .where(eq(teams.id, schoolId))
+      .from(schools)
+      .where(eq(schools.id, schoolId))
       .limit(1);
 
     if (!result || result.length === 0) {
@@ -106,7 +106,7 @@ export async function updateSchoolSettings(
   }
 ) {
   try {
-    const updateData: Partial<typeof teams.$inferInsert> = {
+    const updateData: Partial<typeof schools.$inferInsert> = {
       updatedAt: new Date(),
       settingsUpdatedAt: new Date(),
     };
@@ -120,14 +120,14 @@ export async function updateSchoolSettings(
     }
 
     const result = await db
-      .update(teams)
+      .update(schools)
       .set(updateData)
-      .where(eq(teams.id, schoolId))
+      .where(eq(schools.id, schoolId))
       .returning({
-        schoolId: teams.id,
-        defaultMonthlyFeeRon: teams.defaultMonthlyFeeRon,
-        freeEnrollmentCount: teams.freeEnrollmentCount,
-        settingsUpdatedAt: teams.settingsUpdatedAt,
+        schoolId: schools.id,
+        defaultMonthlyFeeRon: schools.defaultMonthlyFeeRon,
+        freeEnrollmentCount: schools.freeEnrollmentCount,
+        settingsUpdatedAt: schools.settingsUpdatedAt,
       });
 
     if (!result || result.length === 0) {
@@ -149,9 +149,9 @@ export async function updateSchoolSettings(
 export async function schoolExists(schoolId: number): Promise<boolean> {
   try {
     const result = await db
-      .select({ id: teams.id })
-      .from(teams)
-      .where(eq(teams.id, schoolId))
+      .select({ id: schools.id })
+      .from(schools)
+      .where(eq(schools.id, schoolId))
       .limit(1);
 
     return result.length > 0;
@@ -170,10 +170,10 @@ export async function getSettingsLastUpdated(schoolId: number): Promise<Date | n
   try {
     const result = await db
       .select({
-        settingsUpdatedAt: teams.settingsUpdatedAt,
+        settingsUpdatedAt: schools.settingsUpdatedAt,
       })
-      .from(teams)
-      .where(eq(teams.id, schoolId))
+      .from(schools)
+      .where(eq(schools.id, schoolId))
       .limit(1);
 
     if (!result || result.length === 0) {

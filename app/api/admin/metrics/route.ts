@@ -13,7 +13,7 @@ import { ActivityAggregationService } from '@/lib/services/activity-aggregation'
 import { activityCache } from '@/lib/services/activity-cache';
 import { getWeeklyDateRange, getCustomDateRange } from '@/lib/utils/date-range';
 import { ERROR_MESSAGES, ERROR_CODES } from '@/lib/constants/error-messages';
-import { teams } from '@/lib/db/schema';
+import { schools } from '@/lib/db/schema';
 import { db } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 
@@ -265,9 +265,9 @@ export async function GET(request: NextRequest) {
         if (cachedData) {
           // Get school info
           const schoolInfo = await db.select({
-            id: teams.id,
-            name: teams.name
-          }).from(teams).where(eq(teams.id, parseInt(schoolId))).limit(1);
+            id: schools.id,
+            name: schools.name
+          }).from(schools).where(eq(schools.id, parseInt(schoolId))).limit(1);
 
           // Get summary from cache or calculate
           let summary = activityCache.getSummaryMetrics(
@@ -333,9 +333,9 @@ export async function GET(request: NextRequest) {
             dateRange.endDate
           ),
           db.select({
-            id: teams.id,
-            name: teams.name
-          }).from(teams).where(eq(teams.id, parseInt(schoolId))).limit(1)
+            id: schools.id,
+            name: schools.name
+          }).from(schools).where(eq(schools.id, parseInt(schoolId))).limit(1)
         ]);
 
         // Cache the results

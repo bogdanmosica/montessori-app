@@ -98,35 +98,26 @@ export class ChildService {
       throw new Error('Missing required child information');
     }
 
-    // Get default monthly fee from school settings
-    const { schoolSettings, teams } = await import('@/lib/db/schema');
+    // Get default monthly fee from schools table
+    const { schools } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
     let monthlyFee = 0;
 
-    // Try school settings first
-    const settings = await db
-      .select()
-      .from(schoolSettings)
-      .where(eq(schoolSettings.schoolId, schoolId))
-      .limit(1);
-
-    if (settings[0]?.baseFeePerChild) {
-      monthlyFee = settings[0].baseFeePerChild;
-    } else {
-      // Fall back to team default
-      const team = await db
-        .select()
-        .from(teams)
-        .where(eq(teams.id, schoolId))
+    // Get school settings from schools table
+    const school = await db
+      .select({
+        baseFeePerChild: schools.baseFeePerChild,
+      })
+        .from(schools)
+        .where(eq(schools.id, schoolId))
         .limit(1);
 
-      if (team[0]?.defaultMonthlyFeeRon) {
-        monthlyFee = Math.round(parseFloat(team[0].defaultMonthlyFeeRon) * 100);
-      } else {
-        // Ultimate fallback: 650 RON = 65000 cents
-        monthlyFee = 65000;
-      }
+    if (school[0]?.baseFeePerChild) {
+      monthlyFee = school[0].baseFeePerChild;
+    } else {
+      // Ultimate fallback: 650 RON = 65000 cents
+      monthlyFee = 65000;
     }
 
     const newChild: NewChild = {

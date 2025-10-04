@@ -37,7 +37,7 @@ export const users = pgTable('users', {
   deletedAt: timestamp('deleted_at'),
 });
 
-export const teams = pgTable('teams', {
+export const schools = pgTable('schools', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -47,41 +47,37 @@ export const teams = pgTable('teams', {
   stripeProductId: text('stripe_product_id'),
   planName: varchar('plan_name', { length: 50 }),
   subscriptionStatus: varchar('subscription_status', { length: 20 }),
-  // Admin Settings for school defaults
+  // School Settings (merged from schoolSettings table)
   defaultMonthlyFeeRon: decimal('default_monthly_fee_ron', { precision: 10, scale: 2 }).default('0.00'),
   freeEnrollmentCount: integer('free_enrollment_count').default(0),
   maximumCapacity: integer('maximum_capacity').default(100),
+  baseFeePerChild: integer('base_fee_per_child').default(65000), // cents ($650)
+  totalCapacity: integer('total_capacity').default(100),
+  waitlistLimit: integer('waitlist_limit').default(50),
+  siblingDiscountRules: text('sibling_discount_rules'), // JSON string
+  ageGroupCapacities: text('age_group_capacities'), // JSON string
   settingsUpdatedAt: timestamp('settings_updated_at'),
 });
 
-export const teamMembers = pgTable('team_members', {
+export const schoolMembers = pgTable('school_members', {
   id: serial('id').primaryKey(),
   userId: integer('user_id')
     .notNull()
     .references(() => users.id),
-  teamId: integer('team_id')
+  schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   role: varchar('role', { length: 50 }).notNull(),
   joinedAt: timestamp('joined_at').notNull().defaultNow(),
 });
 
-export const activityLogs = pgTable('activity_logs', {
-  id: serial('id').primaryKey(),
-  teamId: integer('team_id')
-    .notNull()
-    .references(() => teams.id),
-  userId: integer('user_id').references(() => users.id),
-  action: text('action').notNull(),
-  timestamp: timestamp('timestamp').notNull().defaultNow(),
-  ipAddress: varchar('ip_address', { length: 45 }),
-});
+// Removed: activityLogs table - use adminAccessLogs instead for audit trail
 
 export const invitations = pgTable('invitations', {
   id: serial('id').primaryKey(),
-  teamId: integer('team_id')
+  schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   email: varchar('email', { length: 255 }).notNull(),
   role: varchar('role', { length: 50 }).notNull(),
   invitedBy: integer('invited_by')
@@ -94,7 +90,7 @@ export const invitations = pgTable('invitations', {
 export const accessLogs = pgTable('access_logs', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: integer('user_id').references(() => users.id),
-  teamId: integer('team_id').references(() => teams.id),
+  schoolId: integer('school_id').references(() => schools.id),
   route: text('route').notNull(),
   success: boolean('success').notNull(),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
@@ -107,7 +103,7 @@ export const families = pgTable('families', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   primaryContactId: integer('primary_contact_id')
     .notNull()
     .references(() => users.id),
@@ -122,7 +118,7 @@ export const children = pgTable('children', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   applicationId: uuid('application_id').references(() => applications.id), // nullable for direct creation
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
@@ -144,7 +140,7 @@ export const parentProfiles = pgTable('parent_profiles', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
   email: varchar('email', { length: 255 }).notNull(),
@@ -159,7 +155,7 @@ export const parentChildRelationships = pgTable('parent_child_relationships', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   parentId: uuid('parent_id')
     .notNull()
     .references(() => parentProfiles.id),
@@ -176,7 +172,7 @@ export const applications = pgTable('applications', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   status: applicationStatusEnum('status').notNull().default('PENDING'),
   childFirstName: varchar('child_first_name', { length: 100 }).notNull(),
   childLastName: varchar('child_last_name', { length: 100 }).notNull(),
@@ -206,7 +202,7 @@ export const adminAccessLogs = pgTable('admin_access_logs', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   adminUserId: integer('admin_user_id')
     .notNull()
     .references(() => users.id),
@@ -221,7 +217,7 @@ export const adminAccessLogs = pgTable('admin_access_logs', {
 
 export const securityAlerts = pgTable('security_alerts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  schoolId: integer('school_id').references(() => teams.id), // null for system-wide alerts
+  schoolId: integer('school_id').references(() => schools.id), // null for system-wide alerts
   type: alertTypeEnum('type').notNull(),
   severity: alertSeverityEnum('severity').notNull(),
   message: text('message').notNull(),
@@ -232,24 +228,13 @@ export const securityAlerts = pgTable('security_alerts', {
   resolvedBy: integer('resolved_by').references(() => users.id),
 });
 
-export const schoolSettings = pgTable('school_settings', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  schoolId: integer('school_id')
-    .notNull()
-    .references(() => teams.id),
-  baseFeePerChild: integer('base_fee_per_child').notNull().default(65000), // cents ($650)
-  totalCapacity: integer('total_capacity').notNull().default(100),
-  waitlistLimit: integer('waitlist_limit').notNull().default(50),
-  siblingDiscountRules: text('sibling_discount_rules'), // JSON string
-  ageGroupCapacities: text('age_group_capacities'), // JSON string
-  lastUpdated: timestamp('last_updated').notNull().defaultNow(),
-});
+// Removed: schoolSettings table - merged into schools table
 
 export const teacherActivity = pgTable('teacher_activity', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   userId: integer('user_id')
     .notNull()
     .references(() => users.id),
@@ -303,20 +288,18 @@ export * from './schema/attendance';
 // Import observations schema
 export * from './schema/observations';
 
-export const teamsRelations = relations(teams, ({ many, one }) => ({
-  teamMembers: many(teamMembers),
-  activityLogs: many(activityLogs),
+export const schoolsRelations = relations(schools, ({ many }) => ({
+  schoolMembers: many(schoolMembers),
   invitations: many(invitations),
   accessLogs: many(accessLogs),
   families: many(families),
   applications: many(applications),
   securityAlerts: many(securityAlerts),
   teacherActivity: many(teacherActivity),
-  schoolSettings: one(schoolSettings),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
-  teamMembers: many(teamMembers),
+  schoolMembers: many(schoolMembers),
   invitationsSent: many(invitations),
   accessLogs: many(accessLogs),
   familiesAsContact: many(families),
@@ -326,9 +309,9 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 export const invitationsRelations = relations(invitations, ({ one }) => ({
-  team: one(teams, {
-    fields: [invitations.teamId],
-    references: [teams.id],
+  school: one(schools, {
+    fields: [invitations.schoolId],
+    references: [schools.id],
   }),
   invitedBy: one(users, {
     fields: [invitations.invitedBy],
@@ -336,44 +319,35 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
   }),
 }));
 
-export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+export const schoolMembersRelations = relations(schoolMembers, ({ one }) => ({
   user: one(users, {
-    fields: [teamMembers.userId],
+    fields: [schoolMembers.userId],
     references: [users.id],
   }),
-  team: one(teams, {
-    fields: [teamMembers.teamId],
-    references: [teams.id],
+  school: one(schools, {
+    fields: [schoolMembers.schoolId],
+    references: [schools.id],
   }),
 }));
 
-export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
-  team: one(teams, {
-    fields: [activityLogs.teamId],
-    references: [teams.id],
-  }),
-  user: one(users, {
-    fields: [activityLogs.userId],
-    references: [users.id],
-  }),
-}));
+// Removed: activityLogsRelations
 
 export const accessLogsRelations = relations(accessLogs, ({ one }) => ({
   user: one(users, {
     fields: [accessLogs.userId],
     references: [users.id],
   }),
-  team: one(teams, {
-    fields: [accessLogs.teamId],
-    references: [teams.id],
+  school: one(schools, {
+    fields: [accessLogs.schoolId],
+    references: [schools.id],
   }),
 }));
 
 // New relations for dashboard tables
 export const familiesRelations = relations(families, ({ one, many }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [families.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   primaryContact: one(users, {
     fields: [families.primaryContactId],
@@ -384,9 +358,9 @@ export const familiesRelations = relations(families, ({ one, many }) => ({
 }));
 
 export const childrenRelations = relations(children, ({ one, many }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [children.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   application: one(applications, {
     fields: [children.applicationId],
@@ -402,9 +376,9 @@ export const childrenRelations = relations(children, ({ one, many }) => ({
 }));
 
 export const applicationsRelations = relations(applications, ({ one, many }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [applications.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   processedByAdmin: one(users, {
     fields: [applications.processedByAdminId],
@@ -414,17 +388,17 @@ export const applicationsRelations = relations(applications, ({ one, many }) => 
 }));
 
 export const parentProfilesRelations = relations(parentProfiles, ({ one, many }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [parentProfiles.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   childRelationships: many(parentChildRelationships),
 }));
 
 export const parentChildRelationshipsRelations = relations(parentChildRelationships, ({ one }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [parentChildRelationships.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   parent: one(parentProfiles, {
     fields: [parentChildRelationships.parentId],
@@ -437,9 +411,9 @@ export const parentChildRelationshipsRelations = relations(parentChildRelationsh
 }));
 
 export const adminAccessLogsRelations = relations(adminAccessLogs, ({ one }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [adminAccessLogs.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   adminUser: one(users, {
     fields: [adminAccessLogs.adminUserId],
@@ -448,9 +422,9 @@ export const adminAccessLogsRelations = relations(adminAccessLogs, ({ one }) => 
 }));
 
 export const securityAlertsRelations = relations(securityAlerts, ({ one }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [securityAlerts.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   resolvedBy: one(users, {
     fields: [securityAlerts.resolvedBy],
@@ -459,17 +433,12 @@ export const securityAlertsRelations = relations(securityAlerts, ({ one }) => ({
   }),
 }));
 
-export const schoolSettingsRelations = relations(schoolSettings, ({ one }) => ({
-  school: one(teams, {
-    fields: [schoolSettings.schoolId],
-    references: [teams.id],
-  }),
-}));
+// Removed: schoolSettingsRelations
 
 export const teacherActivityRelations = relations(teacherActivity, ({ one }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [teacherActivity.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   user: one(users, {
     fields: [teacherActivity.userId],
@@ -486,12 +455,11 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
-export type Team = typeof teams.$inferSelect;
-export type NewTeam = typeof teams.$inferInsert;
-export type TeamMember = typeof teamMembers.$inferSelect;
-export type NewTeamMember = typeof teamMembers.$inferInsert;
-export type ActivityLog = typeof activityLogs.$inferSelect;
-export type NewActivityLog = typeof activityLogs.$inferInsert;
+export type School = typeof schools.$inferSelect;
+export type NewSchool = typeof schools.$inferInsert;
+export type SchoolMember = typeof schoolMembers.$inferSelect;
+export type NewSchoolMember = typeof schoolMembers.$inferInsert;
+// Removed: ActivityLog types
 export type Invitation = typeof invitations.$inferSelect;
 export type NewInvitation = typeof invitations.$inferInsert;
 export type AccessLog = typeof accessLogs.$inferSelect;
@@ -506,8 +474,7 @@ export type Application = typeof applications.$inferSelect;
 export type NewApplication = typeof applications.$inferInsert;
 export type SecurityAlert = typeof securityAlerts.$inferSelect;
 export type NewSecurityAlert = typeof securityAlerts.$inferInsert;
-export type SchoolSettings = typeof schoolSettings.$inferSelect;
-export type NewSchoolSettings = typeof schoolSettings.$inferInsert;
+// Removed: SchoolSettings types (merged into Team type)
 export type TeacherActivity = typeof teacherActivity.$inferSelect;
 export type NewTeacherActivity = typeof teacherActivity.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
@@ -519,8 +486,8 @@ export type NewParentChildRelationship = typeof parentChildRelationships.$inferI
 export type AdminAccessLog = typeof adminAccessLogs.$inferSelect;
 export type NewAdminAccessLog = typeof adminAccessLogs.$inferInsert;
 
-export type TeamDataWithMembers = Team & {
-  teamMembers: (TeamMember & {
+export type SchoolDataWithMembers = School & {
+  schoolMembers: (SchoolMember & {
     user: Pick<User, 'id' | 'name' | 'email'>;
   })[];
 };
@@ -531,15 +498,4 @@ export type FamilyWithChildren = Family & {
   payments: Payment[];
 };
 
-export enum ActivityType {
-  SIGN_UP = 'SIGN_UP',
-  SIGN_IN = 'SIGN_IN',
-  SIGN_OUT = 'SIGN_OUT',
-  UPDATE_PASSWORD = 'UPDATE_PASSWORD',
-  DELETE_ACCOUNT = 'DELETE_ACCOUNT',
-  UPDATE_ACCOUNT = 'UPDATE_ACCOUNT',
-  CREATE_TEAM = 'CREATE_TEAM',
-  REMOVE_TEAM_MEMBER = 'REMOVE_TEAM_MEMBER',
-  INVITE_TEAM_MEMBER = 'INVITE_TEAM_MEMBER',
-  ACCEPT_INVITATION = 'ACCEPT_INVITATION',
-}
+// Removed: ActivityType enum (was used with activityLogs table)

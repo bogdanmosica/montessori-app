@@ -9,7 +9,7 @@ import {
   pgEnum,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { teams, users } from '../schema';
+import { schools, users } from '../schema';
 import { paymentRecords } from './payment-record';
 
 // Extend existing access log enum to include payment actions
@@ -27,7 +27,7 @@ export const extendedAccessLogs = pgTable('extended_access_logs', {
   userId: integer('user_id')
     .references(() => users.id),
   teamId: integer('team_id')
-    .references(() => teams.id),
+    .references(() => schools.id),
   route: text('route').notNull(),
   success: boolean('success').notNull(),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
@@ -45,9 +45,9 @@ export const extendedAccessLogsRelations = relations(extendedAccessLogs, ({ one 
     fields: [extendedAccessLogs.userId],
     references: [users.id],
   }),
-  team: one(teams, {
+  team: one(schools, {
     fields: [extendedAccessLogs.teamId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   payment: one(paymentRecords, {
     fields: [extendedAccessLogs.paymentId],

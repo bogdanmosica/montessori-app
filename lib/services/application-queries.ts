@@ -1,5 +1,5 @@
 import { db } from '../db/drizzle';
-import { applications, teams, users } from '../db/schema';
+import { applications, schools, users } from '../db/schema';
 import { eq, and, or, ilike, desc, asc } from 'drizzle-orm';
 import type { Application } from '../db/schema';
 

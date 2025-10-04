@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { applications, users, teams } from '@/lib/db/schema';
+import { applications, users, schools } from '@/lib/db/schema';
 import { eq, and, gte, lte, inArray, asc, desc } from 'drizzle-orm';
 import { ApplicationReportRow, ReportMetadata } from '@/lib/types/report-types';
 import { ApplicationStatus } from '@/lib/constants/application-status';

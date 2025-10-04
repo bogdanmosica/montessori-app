@@ -163,6 +163,7 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
                   limit={limit}
                   status={status}
                   search={search}
+                  searchParams={params}
                 />
               </Suspense>
             </CardContent>

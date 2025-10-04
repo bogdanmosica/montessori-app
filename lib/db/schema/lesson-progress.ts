@@ -7,7 +7,7 @@ import {
   index,
   unique,
 } from 'drizzle-orm/pg-core';
-import { teams } from '../schema';
+import { schools } from '../schema';
 import { users } from '../schema';
 import { relations } from 'drizzle-orm';
 
@@ -32,7 +32,7 @@ export const lessonProgress = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     schoolId: integer('school_id')
       .notNull()
-      .references(() => teams.id),
+      .references(() => schools.id),
     teacherId: integer('teacher_id')
       .notNull()
       .references(() => users.id),
@@ -84,9 +84,9 @@ export const lessonProgress = pgTable(
  * Lesson Progress Relations
  */
 export const lessonProgressRelations = relations(lessonProgress, ({ one }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [lessonProgress.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   teacher: one(users, {
     fields: [lessonProgress.teacherId],

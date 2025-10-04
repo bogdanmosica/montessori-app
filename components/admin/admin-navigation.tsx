@@ -12,6 +12,7 @@ import {
   Users,
   GraduationCap,
   DollarSign,
+  UserCog,
   FileText,
   Menu,
   X,
@@ -96,6 +97,12 @@ const navigationItems: NavigationItem[] = [
     href: ADMIN_ROUTES.ENROLLMENTS,
     label: NAVIGATION_LABELS.ENROLLMENTS,
     icon: <GraduationCap className="h-4 w-4" />,
+    isEnabled: true
+  },
+  {
+    href: ADMIN_ROUTES.TEACHERS,
+    label: NAVIGATION_LABELS.TEACHERS,
+    icon: <UserCog className="h-4 w-4" />,
     isEnabled: true
   },
   {

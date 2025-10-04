@@ -1,9 +1,9 @@
 # Claude Context: Monte SMS - Montessori School Management System
 
 ## Recent Changes
+- 016-build-the-teacher: Added TypeScript with Next.js 15 (App Router), React 19 + Next.js, shadcn/ui, Tailwind CSS, Drizzle ORM, Auth.js
 - 015-develop-student-profiles: Implemented Student Profiles & Observations feature with full CRUD operations, multi-teacher collaboration, and observation tracking. Added observations table, student profile pages, observation management UI, and teacher-student access validation.
 - 014-build-the-attendance: Added TypeScript (strict mode) with Next.js 15 App Router and React 19 + Drizzle ORM, Auth.js, shadcn/ui, Tailwind CSS
-- 013-teacher-progress-board: Added TypeScript with Next.js 15 (App Router) and React 19 + Next.js, React, Drizzle ORM, shadcn/ui, Tailwind CSS, Auth.js
 
 ## Current Project Structure
 

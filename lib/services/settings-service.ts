@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { teams, schoolSettings } from '@/lib/db/schema';
+import { schools } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import type { SettingsUpdateRequest, AgeGroupCapacity } from '@/lib/validations/settings-schema';
 
@@ -26,14 +26,14 @@ export class SettingsService {
     try {
       const result = await db
         .select({
-          schoolId: teams.id,
-          defaultMonthlyFeeRon: teams.defaultMonthlyFeeRon,
-          freeEnrollmentCount: teams.freeEnrollmentCount,
-          maximumCapacity: teams.maximumCapacity,
-          settingsUpdatedAt: teams.settingsUpdatedAt,
+          schoolId: schools.id,
+          defaultMonthlyFeeRon: schools.defaultMonthlyFeeRon,
+          freeEnrollmentCount: schools.freeEnrollmentCount,
+          maximumCapacity: schools.maximumCapacity,
+          settingsUpdatedAt: schools.settingsUpdatedAt,
         })
-        .from(teams)
-        .where(eq(teams.id, schoolId))
+        .from(schools)
+        .where(eq(schools.id, schoolId))
         .limit(1);
 
       if (!result || result.length === 0) {
@@ -42,19 +42,19 @@ export class SettingsService {
 
       const school = result[0];
 
-      // Get age group capacities from school_settings table
-      const schoolSettingsResult = await db
+      // Get age group capacities from schools table (merged from schoolSettings)
+      const schoolWithCapacities = await db
         .select({
-          ageGroupCapacities: schoolSettings.ageGroupCapacities,
+          ageGroupCapacities: schools.ageGroupCapacities,
         })
-        .from(schoolSettings)
-        .where(eq(schoolSettings.schoolId, schoolId))
+        .from(schools)
+        .where(eq(schools.id, schoolId))
         .limit(1);
 
       let ageGroupCapacities: AgeGroupCapacity[] | undefined;
-      if (schoolSettingsResult.length > 0 && schoolSettingsResult[0].ageGroupCapacities) {
+      if (schoolWithCapacities.length > 0 && schoolWithCapacities[0].ageGroupCapacities) {
         try {
-          ageGroupCapacities = JSON.parse(schoolSettingsResult[0].ageGroupCapacities);
+          ageGroupCapacities = JSON.parse(schoolWithCapacities[0].ageGroupCapacities);
         } catch (error) {
           console.warn('Failed to parse age group capacities JSON:', error);
         }
@@ -87,7 +87,7 @@ export class SettingsService {
       const defaultFeeString = settings.default_monthly_fee_ron.toFixed(2);
 
       const result = await db
-        .update(teams)
+        .update(schools)
         .set({
           defaultMonthlyFeeRon: defaultFeeString,
           freeEnrollmentCount: settings.free_enrollment_count,
@@ -95,49 +95,30 @@ export class SettingsService {
           settingsUpdatedAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(eq(teams.id, schoolId))
+        .where(eq(schools.id, schoolId))
         .returning({
-          schoolId: teams.id,
-          defaultMonthlyFeeRon: teams.defaultMonthlyFeeRon,
-          freeEnrollmentCount: teams.freeEnrollmentCount,
-          maximumCapacity: teams.maximumCapacity,
-          settingsUpdatedAt: teams.settingsUpdatedAt,
+          schoolId: schools.id,
+          defaultMonthlyFeeRon: schools.defaultMonthlyFeeRon,
+          freeEnrollmentCount: schools.freeEnrollmentCount,
+          maximumCapacity: schools.maximumCapacity,
+          settingsUpdatedAt: schools.settingsUpdatedAt,
         });
 
       if (!result || result.length === 0) {
         throw new Error('Failed to update school settings - school not found');
       }
 
-      // Update age group capacities in school_settings table if provided
+      // Update age group capacities in schools table if provided
       if (settings.age_group_capacities) {
         const ageGroupCapacitiesJson = JSON.stringify(settings.age_group_capacities);
-        
-        // Check if school_settings record exists
-        const existingSchoolSettings = await db
-          .select({ id: schoolSettings.id })
-          .from(schoolSettings)
-          .where(eq(schoolSettings.schoolId, schoolId))
-          .limit(1);
 
-        if (existingSchoolSettings.length > 0) {
-          // Update existing record
-          await db
-            .update(schoolSettings)
-            .set({
-              ageGroupCapacities: ageGroupCapacitiesJson,
-              lastUpdated: new Date(),
-            })
-            .where(eq(schoolSettings.schoolId, schoolId));
-        } else {
-          // Insert new record
-          await db
-            .insert(schoolSettings)
-            .values({
-              schoolId,
-              ageGroupCapacities: ageGroupCapacitiesJson,
-              lastUpdated: new Date(),
-            });
-        }
+        await db
+          .update(schools)
+          .set({
+            ageGroupCapacities: ageGroupCapacitiesJson,
+            updatedAt: new Date(),
+          })
+          .where(eq(schools.id, schoolId));
       }
 
       const updated = result[0];
@@ -210,9 +191,9 @@ export class SettingsService {
   static async verifySchoolExists(schoolId: number): Promise<boolean> {
     try {
       const result = await db
-        .select({ id: teams.id })
-        .from(teams)
-        .where(eq(teams.id, schoolId))
+        .select({ id: schools.id })
+        .from(schools)
+        .where(eq(schools.id, schoolId))
         .limit(1);
 
       return result.length > 0;

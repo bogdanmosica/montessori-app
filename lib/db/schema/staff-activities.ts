@@ -7,7 +7,7 @@ import {
   text,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { teams, users } from '../schema';
+import { schools, users } from '../schema';
 
 export const staffActivityTypeEnum = pgEnum('staff_activity_type', [
   'hire',
@@ -21,7 +21,7 @@ export const staffActivities = pgTable('staff_activities', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: integer('tenant_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   staffId: integer('staff_id')
     .notNull()
     .references(() => users.id),
@@ -33,9 +33,9 @@ export const staffActivities = pgTable('staff_activities', {
 });
 
 export const staffActivitiesRelations = relations(staffActivities, ({ one }) => ({
-  tenant: one(teams, {
+  tenant: one(schools, {
     fields: [staffActivities.tenantId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   staff: one(users, {
     fields: [staffActivities.staffId],

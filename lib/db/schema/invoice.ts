@@ -8,7 +8,7 @@ import {
   pgEnum,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { teams, parentProfiles } from '../schema';
+import { schools, parentProfiles } from '../schema';
 
 export const invoiceStatusEnum = pgEnum('invoice_status', [
   'draft',
@@ -22,7 +22,7 @@ export const invoices = pgTable('invoices', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   parentId: uuid('parent_id')
     .notNull()
     .references(() => parentProfiles.id),
@@ -43,9 +43,9 @@ export const invoices = pgTable('invoices', {
 });
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [invoices.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   parent: one(parentProfiles, {
     fields: [invoices.parentId],
