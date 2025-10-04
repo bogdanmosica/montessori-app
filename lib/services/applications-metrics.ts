@@ -31,14 +31,15 @@ export async function getApplicationsMetrics(schoolId: number): Promise<Applicat
 
     const pendingApplications = pendingApplicationsResult[0]?.count || 0;
 
-    // Get active enrollments count (from enrollment records, not children)
+    // Get active enrollments count (count ACTIVE children, not enrollment records)
+    // Children have enrollmentStatus field that indicates if they're actively enrolled
     const activeEnrollmentsResult = await db
       .select({ count: count() })
-      .from(enrollments)
+      .from(children)
       .where(
         and(
-          eq(enrollments.schoolId, schoolId),
-          eq(enrollments.status, 'active')
+          eq(children.schoolId, schoolId),
+          eq(children.enrollmentStatus, 'ACTIVE')
         )
       );
 

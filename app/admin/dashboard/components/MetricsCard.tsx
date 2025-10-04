@@ -70,8 +70,8 @@ export default function MetricsCard({ metrics, className }: MetricsCardProps) {
             of {totalCapacity} capacity
           </p>
           <Button asChild variant="link" className="px-0 mt-2 h-auto">
-            <Link href="/admin/enrollments">
-              Manage Enrollments
+            <Link href="/admin/applications">
+              View Students
             </Link>
           </Button>
         </CardContent>

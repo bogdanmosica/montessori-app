@@ -263,47 +263,40 @@ async function calculateCashflowMetrics(schoolId: string): Promise<CashflowMetri
 
     const baseFeePerChild = schoolData[0]?.baseFeePerChild || 65000; // cents
 
-    // Get all ACTIVE children with their active enrollments to get fee overrides
-    const { enrollments: enrollmentsTable } = await import('@/lib/db/schema');
-
-    // First, get all active enrollments with child and fee information
-    const activeEnrollmentsWithFees = await db
+    // Get all ACTIVE children (they may or may not have enrollment records)
+    // Children table has enrollmentStatus field that indicates active enrollment
+    const activeChildren = await db
       .select({
         childId: children.id,
         childFirstName: children.firstName,
         childLastName: children.lastName,
         childMonthlyFee: children.monthlyFee,
-        enrollmentId: enrollmentsTable.id,
-        enrollmentFeeOverride: enrollmentsTable.monthlyFeeOverride,
-        enrollmentStatus: enrollmentsTable.status,
         childEnrollmentStatus: children.enrollmentStatus,
       })
-      .from(enrollmentsTable)
-      .innerJoin(children, eq(enrollmentsTable.childId, children.id))
+      .from(children)
       .where(and(
-        eq(enrollmentsTable.schoolId, parseInt(schoolId)),
-        eq(enrollmentsTable.status, 'active'),
+        eq(children.schoolId, parseInt(schoolId)),
         eq(children.enrollmentStatus, 'ACTIVE')
       ));
 
+    const activeEnrollmentsWithFees = activeChildren;
+
     const totalChildren = activeEnrollmentsWithFees.length;
 
-    // Calculate current monthly revenue using enrollment fee override if present, otherwise child fee
-    const currentMonthRevenue = activeEnrollmentsWithFees.reduce((sum, enrollment) => {
-      const effectiveFee = enrollment.enrollmentFeeOverride ?? enrollment.childMonthlyFee ?? 0;
+    // Calculate current monthly revenue using child's monthly fee
+    const currentMonthRevenue = activeEnrollmentsWithFees.reduce((sum, child) => {
+      const effectiveFee = child.childMonthlyFee ?? 0;
       return sum + effectiveFee;
     }, 0);
 
     console.log('📊 Cashflow calculation details:', {
       totalChildren,
-      activeEnrollments: activeEnrollmentsWithFees.map(e => ({
-        childId: e.childId,
-        childName: `${e.childFirstName} ${e.childLastName}`,
-        childFee: e.childMonthlyFee,
-        enrollmentOverride: e.enrollmentFeeOverride,
-        effectiveFee: e.enrollmentFeeOverride ?? e.childMonthlyFee ?? 0,
-        enrollmentStatus: e.enrollmentStatus,
-        childEnrollmentStatus: e.childEnrollmentStatus
+      activeChildren: activeEnrollmentsWithFees.map(c => ({
+        childId: c.childId,
+        childName: `${c.childFirstName} ${c.childLastName}`,
+        childFee: c.childMonthlyFee,
+        effectiveFee: c.childMonthlyFee ?? 0,
+        childEnrollmentStatus: c.childEnrollmentStatus
       })),
       currentMonthRevenueInCents: currentMonthRevenue,
       currentMonthRevenueInRON: currentMonthRevenue / 100,

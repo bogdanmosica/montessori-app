@@ -9,8 +9,11 @@ import {
   applications,
   securityAlerts,
   teacherActivity,
-  payments
+  payments,
+  teachers,
+  teacherStudentAssignments
 } from './schema';
+import { eq } from 'drizzle-orm';
 import { hashPassword } from '@/lib/auth/session';
 import { UserRole } from '@/lib/constants/user-roles';
 import { DEFAULT_AGE_GROUPS } from '@/app/admin/dashboard/constants';
@@ -158,6 +161,35 @@ async function seedDashboardData(schoolId: number, adminUserId: number, teacherU
       createdByAdminId: adminUserId,
     },
   ]);
+
+  console.log('Creating teacher record...');
+
+  // Create teacher record in teachers table
+  const [teacher] = await db.insert(teachers).values({
+    userId: teacherUserId,
+    schoolId: schoolId,
+    firstName: 'Teacher',
+    lastName: 'User',
+    email: 'teacher@test.com',
+    phoneNumber: '555-0100',
+    isActive: true,
+    hireDate: new Date(now.getFullYear() - 2, 8, 1), // Hired 2 years ago
+  }).returning();
+
+  console.log('Assigning students to teacher...');
+
+  // Get all children for assignments
+  const allChildren = await db.select().from(children).where(eq(children.schoolId, schoolId));
+
+  // Assign all 6 children to the teacher
+  await db.insert(teacherStudentAssignments).values(
+    allChildren.map(child => ({
+      teacherId: teacher.id,
+      studentId: child.id,
+      isActive: true,
+      assignedAt: new Date(now.getFullYear(), 0, 1), // Assigned at start of year
+    }))
+  );
 
   // console.log('Creating sample applications...');
   // Applications creation commented out - requires full application form data

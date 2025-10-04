@@ -90,12 +90,6 @@ const navigationItems: NavigationItem[] = [
   {
     href: ADMIN_ROUTES.APPLICATIONS,
     label: NAVIGATION_LABELS.APPLICATIONS,
-    icon: <Users className="h-4 w-4" />,
-    isEnabled: true
-  },
-  {
-    href: ADMIN_ROUTES.ENROLLMENTS,
-    label: NAVIGATION_LABELS.ENROLLMENTS,
     icon: <GraduationCap className="h-4 w-4" />,
     isEnabled: true
   },

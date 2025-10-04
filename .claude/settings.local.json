@@ -47,7 +47,13 @@
       "Bash(del libdbmigrations0001_rename_teams_to_schools.sql)",
       "Bash(del libdbmigrationsmeta0000_snapshot.json)",
       "Bash(del libdbmigrationsmeta_journal.json)",
-      "mcp__playwright__browser_fill_form"
+      "mcp__playwright__browser_fill_form",
+      "Bash(taskkill:*)",
+      "Bash(Select-String -Pattern \"teacher_student_assignments\" -Path \"lib\\db\\seed.ts\" -Context 5)",
+      "Bash(pnpm db:reset:*)",
+      "Bash(pnpm db:migrate:drop:*)",
+      "Bash(pnpm db:setup:*)",
+      "mcp__playwright__browser_drag"
     ],
     "deny": [],
     "ask": []

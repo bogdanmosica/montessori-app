@@ -57,7 +57,7 @@ export function CreateChildForm({ adminUserId, schoolId }: CreateChildFormProps)
     date_of_birth: '2021-05-15', // Default to a valid date for testing
     monthly_fee: undefined,
     gender: '',
-    start_date: '2025-10-01', // Default to a future date
+    start_date: new Date().toISOString().split('T')[0], // Default to today
     special_needs: '',
     medical_conditions: '',
   });
