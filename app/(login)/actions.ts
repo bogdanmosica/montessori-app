@@ -80,7 +80,14 @@ export const signIn = validatedAction(signInSchema, async (data, formData) => {
     return createCheckoutSession({ team: foundTeam, priceId });
   }
 
-  redirect('/dashboard');
+  // Redirect based on user role
+  if (foundUser.role === UserRole.ADMIN) {
+    redirect('/admin/dashboard');
+  } else if (foundUser.role === UserRole.TEACHER) {
+    redirect('/teacher/dashboard');
+  } else {
+    redirect('/dashboard');
+  }
 });
 
 const signUpSchema = z.object({
@@ -200,7 +207,14 @@ export const signUp = validatedAction(signUpSchema, async (data, formData) => {
     return createCheckoutSession({ team: createdTeam, priceId });
   }
 
-  redirect('/dashboard');
+  // Redirect based on user role
+  if (createdUser.role === UserRole.ADMIN) {
+    redirect('/admin/dashboard');
+  } else if (createdUser.role === UserRole.TEACHER) {
+    redirect('/teacher/dashboard');
+  } else {
+    redirect('/dashboard');
+  }
 });
 
 export async function signOut() {
