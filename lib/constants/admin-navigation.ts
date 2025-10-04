@@ -1,7 +1,6 @@
 export const ADMIN_ROUTES = {
   DASHBOARD: '/admin/dashboard',
   APPLICATIONS: '/admin/applications',
-  ENROLLMENTS: '/admin/enrollments',
   PAYMENTS: '/admin/payments',
   TEACHERS: '/admin/teachers',
   REPORTS: '/admin/reports'
@@ -9,8 +8,7 @@ export const ADMIN_ROUTES = {
 
 export const NAVIGATION_LABELS = {
   DASHBOARD: 'Dashboard',
-  APPLICATIONS: 'Applications',
-  ENROLLMENTS: 'Enrollments',
+  APPLICATIONS: 'Students',
   PAYMENTS: 'Payments',
   TEACHERS: 'Teachers',
   REPORTS: 'Reports'

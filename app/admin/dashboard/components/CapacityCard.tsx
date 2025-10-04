@@ -182,13 +182,13 @@ export default function CapacityCard({
         {/* Quick Actions */}
         <div className="flex gap-2 pt-2 border-t">
           <Button asChild variant="outline" size="sm" className="flex-1">
-            <Link href="/admin/enrollments">
-              View Enrollments
+            <Link href="/admin/applications">
+              View Students
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm" className="flex-1">
-            <Link href="/admin/applications">
-              Review Applications
+            <Link href="/admin/applications/create-child">
+              Add Student
             </Link>
           </Button>
         </div>

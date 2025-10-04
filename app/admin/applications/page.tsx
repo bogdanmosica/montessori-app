@@ -58,9 +58,9 @@ export default async function ApplicationsPage({ searchParams }: ApplicationsPag
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Applications & Enrollments</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Students</h1>
               <p className="text-muted-foreground">
-                Manage student applications and current enrollments
+                Manage applications, enrollments, and all student records
               </p>
             </div>
             <div className="flex gap-2">
