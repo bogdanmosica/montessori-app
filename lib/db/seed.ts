@@ -2,11 +2,10 @@ import { stripe } from '../payments/stripe';
 import { db } from './drizzle';
 import {
   users,
-  teams,
-  teamMembers,
+  schools,
+  schoolMembers,
   families,
   children,
-  schoolSettings,
   applications,
   securityAlerts,
   teacherActivity,
@@ -52,46 +51,13 @@ async function createStripeProducts() {
   console.log('Stripe products and prices created successfully.');
 }
 
-async function seedDashboardData(teamId: number, adminUserId: number, teacherUserId: number, parentUserId: number) {
-  console.log('Creating school settings...');
-
-  // Create school settings with capacity and fee structure
-  await db.insert(schoolSettings).values({
-    schoolId: teamId,
-    baseFeePerChild: 65000, // $650 in cents
-    totalCapacity: 200,
-    waitlistLimit: 50,
-    siblingDiscountRules: JSON.stringify([
-      { childCount: 2, discountType: 'percentage', discountValue: 20, appliesTo: 'additional_children' },
-      { childCount: 3, discountType: 'percentage', discountValue: 30, appliesTo: 'additional_children' },
-    ]),
-    ageGroupCapacities: JSON.stringify([
-      {
-        ageGroup: 'Toddler (18-36 months)',
-        minAge: 18,
-        maxAge: 36,
-        capacity: 40,
-      },
-      {
-        ageGroup: 'Primary (3-6 years)',
-        minAge: 37,
-        maxAge: 72,
-        capacity: 120,
-      },
-      {
-        ageGroup: 'Elementary (6-12 years)',
-        minAge: 73,
-        maxAge: 144,
-        capacity: 40,
-      },
-    ]),
-  });
-
+async function seedDashboardData(schoolId: number, adminUserId: number, teacherUserId: number, parentUserId: number) {
+  console.log('School settings already included in schools table...');
   console.log('Creating sample families and children...');
 
   // Create families with different configurations
   const family1 = await db.insert(families).values({
-    schoolId: teamId,
+    schoolId: schoolId,
     primaryContactId: parentUserId,
     discountRate: 0, // Single child family
     totalMonthlyFee: 65000, // $650
@@ -99,7 +65,7 @@ async function seedDashboardData(teamId: number, adminUserId: number, teacherUse
   }).returning();
 
   const family2 = await db.insert(families).values({
-    schoolId: teamId,
+    schoolId: schoolId,
     primaryContactId: parentUserId,
     discountRate: 20, // 20% discount on second child
     totalMonthlyFee: 117000, // $650 + ($650 * 0.8) = $1170
@@ -107,7 +73,7 @@ async function seedDashboardData(teamId: number, adminUserId: number, teacherUse
   }).returning();
 
   const family3 = await db.insert(families).values({
-    schoolId: teamId,
+    schoolId: schoolId,
     primaryContactId: parentUserId,
     discountRate: 25, // 20% on 2nd, 30% on 3rd child
     totalMonthlyFee: 162500, // $650 + ($650 * 0.8) + ($650 * 0.7) = $1625
@@ -119,79 +85,82 @@ async function seedDashboardData(teamId: number, adminUserId: number, teacherUse
 
   // Single child family
   await db.insert(children).values({
+    schoolId: schoolId,
     familyId: family1[0].id,
     firstName: 'Emma',
     lastName: 'Johnson',
     dateOfBirth: new Date(now.getFullYear() - 4, 3, 15), // 4 years old
-    enrollmentStatus: 'enrolled',
+    enrollmentStatus: 'ACTIVE',
     monthlyFee: 65000,
+    startDate: new Date(now.getFullYear() - 3, 8, 1), // Started 3 years ago
+    createdByAdminId: adminUserId,
   });
 
   // Two-child family
   await db.insert(children).values([
     {
+      schoolId: schoolId,
       familyId: family2[0].id,
       firstName: 'Liam',
       lastName: 'Smith',
       dateOfBirth: new Date(now.getFullYear() - 5, 7, 22), // 5 years old
-      enrollmentStatus: 'enrolled',
+      enrollmentStatus: 'ACTIVE',
       monthlyFee: 65000,
+      startDate: new Date(now.getFullYear() - 4, 8, 1),
+      createdByAdminId: adminUserId,
     },
     {
+      schoolId: schoolId,
       familyId: family2[0].id,
       firstName: 'Sophia',
       lastName: 'Smith',
       dateOfBirth: new Date(now.getFullYear() - 3, 1, 10), // 3 years old
-      enrollmentStatus: 'enrolled',
+      enrollmentStatus: 'ACTIVE',
       monthlyFee: 52000, // $650 * 0.8
+      startDate: new Date(now.getFullYear() - 2, 8, 1),
+      createdByAdminId: adminUserId,
     },
   ]);
 
   // Three-child family
   await db.insert(children).values([
     {
+      schoolId: schoolId,
       familyId: family3[0].id,
       firstName: 'Noah',
       lastName: 'Brown',
       dateOfBirth: new Date(now.getFullYear() - 7, 9, 5), // 7 years old
-      enrollmentStatus: 'enrolled',
+      enrollmentStatus: 'ACTIVE',
       monthlyFee: 65000,
+      startDate: new Date(now.getFullYear() - 6, 8, 1),
+      createdByAdminId: adminUserId,
     },
     {
+      schoolId: schoolId,
       familyId: family3[0].id,
       firstName: 'Olivia',
       lastName: 'Brown',
       dateOfBirth: new Date(now.getFullYear() - 4, 11, 18), // 4 years old
-      enrollmentStatus: 'enrolled',
+      enrollmentStatus: 'ACTIVE',
       monthlyFee: 52000, // $650 * 0.8
+      startDate: new Date(now.getFullYear() - 3, 8, 1),
+      createdByAdminId: adminUserId,
     },
     {
+      schoolId: schoolId,
       familyId: family3[0].id,
       firstName: 'Ethan',
       lastName: 'Brown',
       dateOfBirth: new Date(now.getFullYear() - 2, 6, 30), // 2 years old
-      enrollmentStatus: 'enrolled',
+      enrollmentStatus: 'ACTIVE',
       monthlyFee: 45500, // $650 * 0.7
+      startDate: new Date(now.getFullYear() - 1, 8, 1),
+      createdByAdminId: adminUserId,
     },
   ]);
 
-  console.log('Creating sample applications...');
-
-  // Create some pending applications
-  const pendingChild1 = await db.insert(children).values({
-    familyId: family1[0].id,
-    firstName: 'Ava',
-    lastName: 'Wilson',
-    dateOfBirth: new Date(now.getFullYear() - 3, 4, 8), // 3 years old
-    enrollmentStatus: 'WAITLISTED',
-    monthlyFee: 65000,
-  }).returning();
-
-  await db.insert(applications).values({
-    schoolId: teamId,
-    childId: pendingChild1[0].id,
-    status: 'pending',
-  });
+  // console.log('Creating sample applications...');
+  // Applications creation commented out - requires full application form data
 
   console.log('Creating sample teacher activity...');
 
@@ -204,7 +173,7 @@ async function seedDashboardData(teamId: number, adminUserId: number, teacherUse
     activityDate.setDate(activityDate.getDate() + i);
 
     await db.insert(teacherActivity).values({
-      schoolId: teamId,
+      schoolId: schoolId,
       userId: teacherUserId,
       sessionStart: new Date(activityDate.getTime() + 9 * 60 * 60 * 1000), // 9 AM
       sessionEnd: new Date(activityDate.getTime() + 15 * 60 * 60 * 1000), // 3 PM
@@ -218,7 +187,7 @@ async function seedDashboardData(teamId: number, adminUserId: number, teacherUse
 
   // Create a sample security alert
   await db.insert(securityAlerts).values({
-    schoolId: teamId,
+    schoolId: schoolId,
     type: 'failed_logins',
     severity: 'medium',
     message: '3 failed login attempts from IP 192.168.1.100',
@@ -269,11 +238,40 @@ async function seedDashboardData(teamId: number, adminUserId: number, teacherUse
 }
 
 async function seed() {
-  console.log('Creating test team...');
-  const [team] = await db
-    .insert(teams)
+  console.log('Creating test school...');
+  const [school] = await db
+    .insert(schools)
     .values({
       name: 'Montessori Test School',
+      // School settings (merged from schoolSettings table)
+      baseFeePerChild: 65000, // $650 in cents
+      totalCapacity: 200,
+      waitlistLimit: 50,
+      maximumCapacity: 200,
+      siblingDiscountRules: JSON.stringify([
+        { childCount: 2, discountType: 'percentage', discountValue: 20, appliesTo: 'additional_children' },
+        { childCount: 3, discountType: 'percentage', discountValue: 30, appliesTo: 'additional_children' },
+      ]),
+      ageGroupCapacities: JSON.stringify([
+        {
+          ageGroup: 'Toddler (18-36 months)',
+          minAge: 18,
+          maxAge: 36,
+          capacity: 40,
+        },
+        {
+          ageGroup: 'Primary (3-6 years)',
+          minAge: 37,
+          maxAge: 72,
+          capacity: 120,
+        },
+        {
+          ageGroup: 'Elementary (6-12 years)',
+          minAge: 73,
+          maxAge: 144,
+          capacity: 40,
+        },
+      ]),
     })
     .returning();
 
@@ -324,22 +322,22 @@ async function seed() {
     ])
     .returning();
 
-  console.log('Assigning users to team...');
+  console.log('Assigning users to school...');
 
-  // Add all users to the team
-  await db.insert(teamMembers).values([
+  // Add all users to the school
+  await db.insert(schoolMembers).values([
     {
-      teamId: team.id,
+      schoolId: school.id,
       userId: adminUser.id,
       role: UserRole.ADMIN,
     },
     {
-      teamId: team.id,
+      schoolId: school.id,
       userId: teacherUser.id,
       role: UserRole.TEACHER,
     },
     {
-      teamId: team.id,
+      schoolId: school.id,
       userId: parentUser.id,
       role: UserRole.PARENT,
     },
@@ -351,7 +349,7 @@ async function seed() {
   console.log('  Parent: parent@test.com / parent123');
 
   await createStripeProducts();
-  await seedDashboardData(team.id, adminUser.id, teacherUser.id, parentUser.id);
+  await seedDashboardData(school.id, adminUser.id, teacherUser.id, parentUser.id);
 }
 
 seed()

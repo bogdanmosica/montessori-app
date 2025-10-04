@@ -8,7 +8,7 @@ import {
   pgEnum,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { teams, parentProfiles } from '../schema';
+import { schools, parentProfiles } from '../schema';
 
 export const paymentTypeEnum = pgEnum('payment_type', [
   'card',
@@ -20,7 +20,7 @@ export const paymentMethods = pgTable('payment_methods', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   parentId: uuid('parent_id')
     .notNull()
     .references(() => parentProfiles.id),
@@ -36,9 +36,9 @@ export const paymentMethods = pgTable('payment_methods', {
 });
 
 export const paymentMethodsRelations = relations(paymentMethods, ({ one }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [paymentMethods.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   parent: one(parentProfiles, {
     fields: [paymentMethods.parentId],

@@ -1,5 +1,5 @@
 import { db } from '../db/drizzle';
-import { children, enrollments, teams, schoolSettings } from '../db/schema';
+import { children, enrollments, schools, schoolSettings } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import type { NewChild, Child } from '../db/schema';
 
@@ -28,29 +28,17 @@ export async function createChildProfile(data: CreateChildData, tx?: any): Promi
   let monthlyFee = data.monthlyFee ?? 0;
 
   if (monthlyFee === 0) {
-    // Try to get default from school settings
-    const settings = await dbInstance
-      .select()
-      .from(schoolSettings)
-      .where(eq(schoolSettings.schoolId, data.schoolId))
+    // Get default from schools table (school settings merged)
+    const school = await dbInstance
+      .select({
+        baseFeePerChild: schools.baseFeePerChild,
+      })
+      .from(schools)
+      .where(eq(schools.id, data.schoolId))
       .limit(1);
 
-    if (settings[0]?.baseFeePerChild) {
-      monthlyFee = settings[0].baseFeePerChild;
-    }
-
-    // If still 0, try to get from team settings
-    if (monthlyFee === 0) {
-      const team = await dbInstance
-        .select()
-        .from(teams)
-        .where(eq(teams.id, data.schoolId))
-        .limit(1);
-
-      if (team[0]?.defaultMonthlyFeeRon) {
-        // Convert RON to cents
-        monthlyFee = Math.round(parseFloat(team[0].defaultMonthlyFeeRon) * 100);
-      }
+    if (school[0]?.baseFeePerChild) {
+      monthlyFee = school[0].baseFeePerChild;
     }
   }
 

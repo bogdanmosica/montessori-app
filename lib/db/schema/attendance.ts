@@ -1,5 +1,5 @@
 import { pgTable, uuid, text, timestamp, pgEnum, integer, date, unique, index } from 'drizzle-orm/pg-core';
-import { users, teams, children } from '../schema';
+import { users, schools, children } from '../schema';
 import { relations } from 'drizzle-orm';
 
 /**
@@ -35,7 +35,7 @@ export const attendance = pgTable(
     notes: text('notes'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
-    tenantId: integer('tenant_id').notNull().references(() => teams.id, { onDelete: 'cascade' }),
+    tenantId: integer('tenant_id').notNull().references(() => schools.id, { onDelete: 'cascade' }),
   },
   (table) => ({
     // Unique constraint: one attendance record per student per teacher per date
@@ -65,7 +65,7 @@ export const attendance = pgTable(
 /**
  * Attendance Relations
  *
- * Defines relationships to students (children), teachers (users), and schools (teams).
+ * Defines relationships to students (children), teachers (users), and schools (schools).
  */
 export const attendanceRelations = relations(attendance, ({ one }) => ({
   student: one(children, {
@@ -76,9 +76,9 @@ export const attendanceRelations = relations(attendance, ({ one }) => ({
     fields: [attendance.teacherId],
     references: [users.id],
   }),
-  school: one(teams, {
+  school: one(schools, {
     fields: [attendance.tenantId],
-    references: [teams.id],
+    references: [schools.id],
   }),
 }));
 

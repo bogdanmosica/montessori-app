@@ -8,7 +8,7 @@ import {
   pgEnum,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { teams, parentProfiles, children } from '../schema';
+import { schools, parentProfiles, children } from '../schema';
 
 // Payment related enums
 export const paymentMethodEnum = pgEnum('payment_method', [
@@ -30,7 +30,7 @@ export const paymentRecords = pgTable('payment_records', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   parentId: uuid('parent_id')
     .notNull()
     .references(() => parentProfiles.id),
@@ -51,9 +51,9 @@ export const paymentRecords = pgTable('payment_records', {
 });
 
 export const paymentRecordsRelations = relations(paymentRecords, ({ one }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [paymentRecords.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   parent: one(parentProfiles, {
     fields: [paymentRecords.parentId],

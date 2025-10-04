@@ -1,19 +1,21 @@
 // T012: Create cashflow calculation helpers - Using real database data
 import { db } from '@/lib/db';
-import { children, payments, schoolSettings, families } from '@/lib/db/schema';
+import { children, payments, families, schools } from '@/lib/db/schema';
 import { eq, and, sum, count, gte, lt } from 'drizzle-orm';
 import type { CashflowMetrics, RevenueBreakdown } from '@/lib/types/dashboard';
 
 export async function getCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {
   try {
-    // Get school settings for base fee
-    const schoolSettingsData = await db
-      .select()
-      .from(schoolSettings)
-      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))
+    // Get school settings for base fee from schools table
+    const schoolData = await db
+      .select({
+        baseFeePerChild: schools.baseFeePerChild,
+      })
+      .from(schools)
+      .where(eq(schools.id, parseInt(schoolId)))
       .limit(1);
 
-    const baseFeePerChild = schoolSettingsData[0]?.baseFeePerChild || 65000; // cents
+    const baseFeePerChild = schoolData[0]?.baseFeePerChild || 65000; // cents
 
     // Get all children with their actual monthly fees
     const childrenWithFees = await db

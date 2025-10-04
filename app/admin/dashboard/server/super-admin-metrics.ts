@@ -1,16 +1,16 @@
 // T026 (early): Create Super Admin metrics aggregation helpers (needed for API)
 import { db } from '@/lib/db/drizzle';
-import { teams, users, children, families, securityAlerts, teamMembers } from '@/lib/db/schema';
+import { schools, users, children, families, securityAlerts, schoolMembers } from '@/lib/db/schema';
 import { count, sum, avg, eq, gte, and } from 'drizzle-orm';
 import type { AggregatedMetrics, AlertSeverity, SubscriptionTier } from '@/lib/types/dashboard';
 import { UserRole } from '@/lib/constants/user-roles';
 
 export async function getSuperAdminMetrics(): Promise<AggregatedMetrics> {
   try {
-    // Get total schools (teams)
+    // Get total schools (schools)
     const totalSchoolsQuery = await db
       .select({ count: count() })
-      .from(teams);
+      .from(schools);
 
     const totalSchools = totalSchoolsQuery[0]?.count || 0;
 
@@ -25,16 +25,16 @@ export async function getSuperAdminMetrics(): Promise<AggregatedMetrics> {
     // Get total teachers across all schools
     const totalTeachersQuery = await db
       .select({ count: count() })
-      .from(teamMembers)
-      .leftJoin(users, eq(users.id, teamMembers.userId))
+      .from(schoolMembers)
+      .leftJoin(users, eq(users.id, schoolMembers.userId))
       .where(eq(users.role, UserRole.TEACHER));
 
     const totalTeachers = totalTeachersQuery[0]?.count || 0;
 
     // Calculate total capacity across all schools
     const totalCapacityQuery = await db
-      .select({ totalCapacity: sum(teams.planName) }) // This would be a proper capacity field in production
-      .from(teams);
+      .select({ totalCapacity: sum(schools.planName) }) // This would be a proper capacity field in production
+      .from(schools);
 
     // For demo purposes, estimate total capacity
     const totalCapacity = totalSchools * 150; // Average 150 students per school
@@ -91,11 +91,11 @@ async function getSubscriptionBreakdown(): Promise<Record<SubscriptionTier, numb
   try {
     const subscriptions = await db
       .select({
-        planName: teams.planName,
+        planName: schools.planName,
         count: count(),
       })
-      .from(teams)
-      .groupBy(teams.planName);
+      .from(schools)
+      .groupBy(schools.planName);
 
     const breakdown: Record<SubscriptionTier, number> = {
       basic: 0,
@@ -177,8 +177,8 @@ export async function getSystemGrowthTrends() {
     // Get new schools in the last month
     const newSchoolsQuery = await db
       .select({ count: count() })
-      .from(teams)
-      .where(gte(teams.createdAt, oneMonthAgo));
+      .from(schools)
+      .where(gte(schools.createdAt, oneMonthAgo));
 
     const newSchools = newSchoolsQuery[0]?.count || 0;
 
@@ -205,16 +205,16 @@ export async function getTopPerformingSchools(limit: number = 5) {
   try {
     // In a real implementation, this would calculate performance metrics
     // For demo purposes, return sample data
-    const schools = await db
+    const schoolsList = await db
       .select({
-        id: teams.id,
-        name: teams.name,
-        planName: teams.planName,
+        id: schools.id,
+        name: schools.name,
+        planName: schools.planName,
       })
-      .from(teams)
+      .from(schools)
       .limit(limit);
 
-    return schools.map(school => ({
+    return schoolsList.map(school => ({
       id: school.id.toString(),
       name: school.name,
       tier: school.planName || 'premium',

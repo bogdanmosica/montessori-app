@@ -1,31 +1,24 @@
 // T013: Create capacity utilization helpers
 import { db } from '@/lib/db/drizzle';
-import { children, schoolSettings, applications, teams } from '@/lib/db/schema';
+import { children, applications, schools } from '@/lib/db/schema';
 import { eq, and, count, sql } from 'drizzle-orm';
 import type { AgeGroupCapacity } from '@/lib/types/dashboard';
 import { DEFAULT_AGE_GROUPS } from '../constants';
 
 export async function getCapacityMetrics(schoolId: string) {
   try {
-    // Get school capacity from teams table (settings)
+    // Get school capacity and age group capacities from schools table
     const schoolData = await db
       .select({
-        maximumCapacity: teams.maximumCapacity,
+        maximumCapacity: schools.maximumCapacity,
+        ageGroupCapacities: schools.ageGroupCapacities,
       })
-      .from(teams)
-      .where(eq(teams.id, parseInt(schoolId)))
+      .from(schools)
+      .where(eq(schools.id, parseInt(schoolId)))
       .limit(1);
 
     const totalCapacity = schoolData[0]?.maximumCapacity || 100;
-
-    // Get age group capacities from schoolSettings if exists
-    const schoolSettingsData = await db
-      .select()
-      .from(schoolSettings)
-      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))
-      .limit(1);
-
-    const ageGroupCapacitiesRaw = schoolSettingsData[0]?.ageGroupCapacities;
+    const ageGroupCapacitiesRaw = schoolData[0]?.ageGroupCapacities;
 
     // Parse age group capacities or use defaults
     let ageGroupCapacities;
@@ -169,14 +162,17 @@ export async function getCapacityAlerts(schoolId: string) {
 
 export async function getWaitlistMetrics(schoolId: string) {
   try {
-    // Get school waitlist settings
-    const schoolSettingsData = await db
-      .select()
-      .from(schoolSettings)
-      .where(eq(schoolSettings.schoolId, parseInt(schoolId)))
+    // Get school waitlist settings from schools table
+    const schoolData = await db
+      .select({
+        waitlistLimit: schools.waitlistLimit,
+        ageGroupCapacities: schools.ageGroupCapacities,
+      })
+      .from(schools)
+      .where(eq(schools.id, parseInt(schoolId)))
       .limit(1);
 
-    const waitlistLimit = schoolSettingsData[0]?.waitlistLimit || 50;
+    const waitlistLimit = schoolData[0]?.waitlistLimit || 50;
 
     // Get total waitlisted children
     const totalWaitlisted = await db
@@ -190,7 +186,7 @@ export async function getWaitlistMetrics(schoolId: string) {
     const totalWaitlistedCount = totalWaitlisted[0]?.count || 0;
 
     // Get waitlist by age group
-    const ageGroupCapacitiesRaw = schoolSettingsData[0]?.ageGroupCapacities;
+    const ageGroupCapacitiesRaw = schoolData[0]?.ageGroupCapacities;
     let ageGroupCapacities;
     try {
       ageGroupCapacities = ageGroupCapacitiesRaw

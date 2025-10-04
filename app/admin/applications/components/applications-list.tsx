@@ -13,6 +13,7 @@ interface ApplicationsListProps {
   limit: number;
   status?: 'PENDING' | 'REJECTED' | 'ACTIVE' | 'INACTIVE' | 'WAITLISTED';
   search?: string;
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
 export async function ApplicationsList({
@@ -21,6 +22,7 @@ export async function ApplicationsList({
   limit,
   status,
   search,
+  searchParams,
 }: ApplicationsListProps) {
   try {
     const result = await getCombinedApplicationsAndChildren({
@@ -58,7 +60,7 @@ export async function ApplicationsList({
         </div>
 
         {/* Pagination */}
-        <PaginationControls pagination={result.pagination} />
+        <PaginationControls pagination={result.pagination} searchParams={searchParams} />
       </div>
     );
   } catch (error) {
@@ -189,12 +191,20 @@ interface PaginationControlsProps {
     has_next: boolean;
     has_prev: boolean;
   };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-function PaginationControls({ pagination }: PaginationControlsProps) {
+function PaginationControls({ pagination, searchParams = {} }: PaginationControlsProps) {
   if (pagination.total_pages <= 1) return null;
 
-  const currentParams = new URLSearchParams(window?.location?.search || '');
+  const currentParams = new URLSearchParams(
+    Object.entries(searchParams).reduce((acc, [key, value]) => {
+      if (value && key !== 'page') {
+        acc[key] = Array.isArray(value) ? value[0] : value;
+      }
+      return acc;
+    }, {} as Record<string, string>)
+  );
 
   return (
     <div className="flex items-center justify-between pt-4">

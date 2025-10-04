@@ -7,7 +7,7 @@ import {
   timestamp,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { teams } from '../schema';
+import { schools } from '../schema';
 
 export const eventTypeEnum = pgEnum('event_type', [
   'meeting',
@@ -21,7 +21,7 @@ export const events = pgTable('events', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: integer('tenant_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   name: varchar('name', { length: 255 }).notNull(),
   eventType: eventTypeEnum('event_type').notNull(),
   eventDate: timestamp('event_date').notNull(),
@@ -31,9 +31,9 @@ export const events = pgTable('events', {
 });
 
 export const eventsRelations = relations(events, ({ one }) => ({
-  tenant: one(teams, {
+  tenant: one(schools, {
     fields: [events.tenantId],
-    references: [teams.id],
+    references: [schools.id],
   }),
 }));
 

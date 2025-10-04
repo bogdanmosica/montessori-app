@@ -3,6 +3,7 @@ export const ADMIN_ROUTES = {
   APPLICATIONS: '/admin/applications',
   ENROLLMENTS: '/admin/enrollments',
   PAYMENTS: '/admin/payments',
+  TEACHERS: '/admin/teachers',
   REPORTS: '/admin/reports'
 } as const;
 
@@ -11,6 +12,7 @@ export const NAVIGATION_LABELS = {
   APPLICATIONS: 'Applications',
   ENROLLMENTS: 'Enrollments',
   PAYMENTS: 'Payments',
+  TEACHERS: 'Teachers',
   REPORTS: 'Reports'
 } as const;
 

@@ -6,14 +6,11 @@ import { db } from '@/lib/db/drizzle';
 import {
   User,
   users,
-  teams,
-  teamMembers,
-  activityLogs,
+  schools,
+  schoolMembers,
   type NewUser,
-  type NewTeam,
-  type NewTeamMember,
-  type NewActivityLog,
-  ActivityType,
+  type NewSchool,
+  type NewSchoolMember,
   invitations
 } from '@/lib/db/schema';
 import { comparePasswords, hashPassword, setSession } from '@/lib/auth/session';
@@ -27,23 +24,7 @@ import {
   validatedActionWithUser
 } from '@/lib/auth/middleware';
 
-async function logActivity(
-  teamId: number | null | undefined,
-  userId: number,
-  type: ActivityType,
-  ipAddress?: string
-) {
-  if (teamId === null || teamId === undefined) {
-    return;
-  }
-  const newActivity: NewActivityLog = {
-    teamId,
-    userId,
-    action: type,
-    ipAddress: ipAddress || ''
-  };
-  await db.insert(activityLogs).values(newActivity);
-}
+// Removed: logActivity function - use adminAccessLogs for audit trail instead
 
 const signInSchema = z.object({
   email: z.string().email().min(3).max(255),
@@ -56,11 +37,11 @@ export const signIn = validatedAction(signInSchema, async (data, formData) => {
   const userWithTeam = await db
     .select({
       user: users,
-      team: teams
+      team: schools
     })
     .from(users)
-    .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
-    .leftJoin(teams, eq(teamMembers.teamId, teams.id))
+    .leftJoin(schoolMembers, eq(users.id, schoolMembers.userId))
+    .leftJoin(schools, eq(schoolMembers.schoolId, schools.id))
     .where(eq(users.email, email))
     .limit(1);
 
@@ -87,14 +68,11 @@ export const signIn = validatedAction(signInSchema, async (data, formData) => {
     };
   }
 
-  await Promise.all([
-    setSession({
-      ...foundUser,
-      name: foundUser.name || '',
-      teamId: foundTeam?.id || null,
-    }),
-    logActivity(foundTeam?.id, foundUser.id, ActivityType.SIGN_IN)
-  ]);
+  await setSession({
+    ...foundUser,
+    name: foundUser.name || '',
+    teamId: foundTeam?.id || null,
+  });
 
   const redirectTo = formData.get('redirect') as string | null;
   if (redirectTo === 'checkout') {
@@ -102,7 +80,14 @@ export const signIn = validatedAction(signInSchema, async (data, formData) => {
     return createCheckoutSession({ team: foundTeam, priceId });
   }
 
-  redirect('/dashboard');
+  // Redirect based on user role
+  if (foundUser.role === UserRole.ADMIN) {
+    redirect('/admin/dashboard');
+  } else if (foundUser.role === UserRole.TEACHER) {
+    redirect('/teacher/dashboard');
+  } else {
+    redirect('/dashboard');
+  }
 });
 
 const signUpSchema = z.object({
@@ -148,7 +133,7 @@ export const signUp = validatedAction(signUpSchema, async (data, formData) => {
 
   let teamId: number;
   let userRole: string;
-  let createdTeam: typeof teams.$inferSelect | null = null;
+  let createdTeam: typeof schools.$inferSelect | null = null;
 
   if (inviteId) {
     // Check if there's a valid invitation
@@ -173,23 +158,21 @@ export const signUp = validatedAction(signUpSchema, async (data, formData) => {
         .set({ status: 'accepted' })
         .where(eq(invitations.id, invitation.id));
 
-      await logActivity(teamId, createdUser.id, ActivityType.ACCEPT_INVITATION);
-
       [createdTeam] = await db
         .select()
-        .from(teams)
-        .where(eq(teams.id, teamId))
+        .from(schools)
+        .where(eq(schools.id, teamId))
         .limit(1);
     } else {
       return { error: 'Invalid or expired invitation.', email, password };
     }
   } else {
     // Create a new team if there's no invitation
-    const newTeam: NewTeam = {
+    const newTeam: NewSchool = {
       name: `${email}'s Team`
     };
 
-    [createdTeam] = await db.insert(teams).values(newTeam).returning();
+    [createdTeam] = await db.insert(schools).values(newTeam).returning();
 
     if (!createdTeam) {
       return {
@@ -201,19 +184,16 @@ export const signUp = validatedAction(signUpSchema, async (data, formData) => {
 
     teamId = createdTeam.id;
     userRole = 'owner';
-
-    await logActivity(teamId, createdUser.id, ActivityType.CREATE_TEAM);
   }
 
-  const newTeamMember: NewTeamMember = {
+  const newTeamMember: NewSchoolMember = {
     userId: createdUser.id,
-    teamId: teamId,
+    schoolId: teamId,
     role: userRole
   };
 
   await Promise.all([
-    db.insert(teamMembers).values(newTeamMember),
-    logActivity(teamId, createdUser.id, ActivityType.SIGN_UP),
+    db.insert(schoolMembers).values(newTeamMember),
     setSession({
       ...createdUser,
       name: createdUser.name || '',
@@ -227,13 +207,18 @@ export const signUp = validatedAction(signUpSchema, async (data, formData) => {
     return createCheckoutSession({ team: createdTeam, priceId });
   }
 
-  redirect('/dashboard');
+  // Redirect based on user role
+  if (createdUser.role === UserRole.ADMIN) {
+    redirect('/admin/dashboard');
+  } else if (createdUser.role === UserRole.TEACHER) {
+    redirect('/teacher/dashboard');
+  } else {
+    redirect('/dashboard');
+  }
 });
 
 export async function signOut() {
   const user = (await getUser()) as User;
-  const userWithTeam = await getUserWithTeam(user.id);
-  await logActivity(userWithTeam?.teamId, user.id, ActivityType.SIGN_OUT);
   (await cookies()).delete('session');
 }
 
@@ -283,13 +268,10 @@ export const updatePassword = validatedActionWithUser(
     const newPasswordHash = await hashPassword(newPassword);
     const userWithTeam = await getUserWithTeam(user.id);
 
-    await Promise.all([
-      db
-        .update(users)
-        .set({ passwordHash: newPasswordHash })
-        .where(eq(users.id, user.id)),
-      logActivity(userWithTeam?.teamId, user.id, ActivityType.UPDATE_PASSWORD)
-    ]);
+    await db
+      .update(users)
+      .set({ passwordHash: newPasswordHash })
+      .where(eq(users.id, user.id));
 
     return {
       success: 'Password updated successfully.'
@@ -314,14 +296,6 @@ export const deleteAccount = validatedActionWithUser(
       };
     }
 
-    const userWithTeam = await getUserWithTeam(user.id);
-
-    await logActivity(
-      userWithTeam?.teamId,
-      user.id,
-      ActivityType.DELETE_ACCOUNT
-    );
-
     // Soft delete
     await db
       .update(users)
@@ -333,11 +307,11 @@ export const deleteAccount = validatedActionWithUser(
 
     if (userWithTeam?.teamId) {
       await db
-        .delete(teamMembers)
+        .delete(schoolMembers)
         .where(
           and(
-            eq(teamMembers.userId, user.id),
-            eq(teamMembers.teamId, userWithTeam.teamId)
+            eq(schoolMembers.userId, user.id),
+            eq(schoolMembers.schoolId, userWithTeam.teamId)
           )
         );
     }
@@ -358,10 +332,7 @@ export const updateAccount = validatedActionWithUser(
     const { name, email } = data;
     const userWithTeam = await getUserWithTeam(user.id);
 
-    await Promise.all([
-      db.update(users).set({ name, email }).where(eq(users.id, user.id)),
-      logActivity(userWithTeam?.teamId, user.id, ActivityType.UPDATE_ACCOUNT)
-    ]);
+    await db.update(users).set({ name, email }).where(eq(users.id, user.id));
 
     return { name, success: 'Account updated successfully.' };
   }
@@ -382,19 +353,13 @@ export const removeTeamMember = validatedActionWithUser(
     }
 
     await db
-      .delete(teamMembers)
+      .delete(schoolMembers)
       .where(
         and(
-          eq(teamMembers.id, memberId),
-          eq(teamMembers.teamId, userWithTeam.teamId)
+          eq(schoolMembers.id, memberId),
+          eq(schoolMembers.schoolId, userWithTeam.teamId)
         )
       );
-
-    await logActivity(
-      userWithTeam.teamId,
-      user.id,
-      ActivityType.REMOVE_TEAM_MEMBER
-    );
 
     return { success: 'Team member removed successfully' };
   }
@@ -418,9 +383,9 @@ export const inviteTeamMember = validatedActionWithUser(
     const existingMember = await db
       .select()
       .from(users)
-      .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
+      .leftJoin(schoolMembers, eq(users.id, schoolMembers.userId))
       .where(
-        and(eq(users.email, email), eq(teamMembers.teamId, userWithTeam.teamId))
+        and(eq(users.email, email), eq(schoolMembers.schoolId, userWithTeam.teamId))
       )
       .limit(1);
 
@@ -453,12 +418,6 @@ export const inviteTeamMember = validatedActionWithUser(
       invitedBy: user.id,
       status: 'pending'
     });
-
-    await logActivity(
-      userWithTeam.teamId,
-      user.id,
-      ActivityType.INVITE_TEAM_MEMBER
-    );
 
     // TODO: Send invitation email and include ?inviteId={id} to sign-up URL
     // await sendInvitationEmail(email, userWithTeam.team.name, role)

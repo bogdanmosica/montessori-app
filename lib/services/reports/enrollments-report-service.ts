@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { enrollments, children, users, teams, parentChildRelationships, parentProfiles } from '@/lib/db/schema';
+import { enrollments, children, users, schools, parentChildRelationships, parentProfiles } from '@/lib/db/schema';
 import { eq, and, gte, lte, inArray, desc, isNull } from 'drizzle-orm';
 import { EnrollmentReportRow, ReportMetadata } from '@/lib/types/report-types';
 import { REPORT_LIMITS } from '@/lib/constants/report-constants';

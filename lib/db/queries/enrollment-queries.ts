@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { enrollments, children, users, teams } from '@/lib/db/schema';
+import { enrollments, children, users, schools } from '@/lib/db/schema';
 import { eq, and, or, gte, lte, count, sql, desc, asc } from 'drizzle-orm';
 import type { EnrollmentWithChild } from '@/app/admin/enrollments/types';
 import { ENROLLMENT_STATUS } from '@/app/admin/enrollments/constants';

@@ -1,5 +1,5 @@
 import { pgTable, uuid, text, timestamp, pgEnum, integer, unique, index } from 'drizzle-orm/pg-core';
-import { users, teams, children } from '../schema';
+import { users, schools, children } from '../schema';
 import { relations, eq } from 'drizzle-orm';
 
 // Create a new enrollment status enum for enrollment management
@@ -11,7 +11,7 @@ export const enrollments = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     childId: uuid('child_id').notNull().references(() => children.id),
-    schoolId: integer('school_id').notNull().references(() => teams.id),
+    schoolId: integer('school_id').notNull().references(() => schools.id),
     status: enrollmentManagementStatusEnum('status').notNull().default('active'),
     enrollmentDate: timestamp('enrollment_date').notNull(),
     withdrawalDate: timestamp('withdrawal_date'),
@@ -49,9 +49,9 @@ export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
     fields: [enrollments.childId],
     references: [children.id],
   }),
-  school: one(teams, {
+  school: one(schools, {
     fields: [enrollments.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   createdBy: one(users, {
     fields: [enrollments.createdBy],

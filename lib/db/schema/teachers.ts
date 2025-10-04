@@ -5,10 +5,11 @@ import {
   timestamp,
   varchar,
   boolean,
+  decimal,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from '../schema';
-import { teams } from '../schema';
+import { schools } from '../schema';
 import { children } from '../schema';
 
 // Teacher table
@@ -20,7 +21,10 @@ export const teachers = pgTable('teachers', {
     .unique(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
+  wage: decimal('wage', { precision: 10, scale: 2 }),
+  nationality: varchar('nationality', { length: 100 }),
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -46,9 +50,9 @@ export const teachersRelations = relations(teachers, ({ one, many }) => ({
     fields: [teachers.userId],
     references: [users.id],
   }),
-  school: one(teams, {
+  school: one(schools, {
     fields: [teachers.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   studentAssignments: many(teacherStudentAssignments),
 }));

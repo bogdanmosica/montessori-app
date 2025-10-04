@@ -8,7 +8,7 @@ import {
   pgEnum,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { teams, parentProfiles, users } from '../schema';
+import { schools, parentProfiles, users } from '../schema';
 import { paymentRecords } from './payment-record';
 
 export const alertTypeEnum = pgEnum('alert_type', [
@@ -29,7 +29,7 @@ export const paymentAlerts = pgTable('payment_alerts', {
   id: uuid('id').primaryKey().defaultRandom(),
   schoolId: integer('school_id')
     .notNull()
-    .references(() => teams.id),
+    .references(() => schools.id),
   parentId: uuid('parent_id')
     .references(() => parentProfiles.id),
   paymentId: uuid('payment_id')
@@ -47,9 +47,9 @@ export const paymentAlerts = pgTable('payment_alerts', {
 });
 
 export const paymentAlertsRelations = relations(paymentAlerts, ({ one }) => ({
-  school: one(teams, {
+  school: one(schools, {
     fields: [paymentAlerts.schoolId],
-    references: [teams.id],
+    references: [schools.id],
   }),
   parent: one(parentProfiles, {
     fields: [paymentAlerts.parentId],
