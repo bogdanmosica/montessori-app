@@ -25,3 +25,12 @@ describe('POST /admin/import/confirm', () => {
     expect(result.importedCount).toBeGreaterThan(0);
   });
 });
+
+describe('POST /admin/import/confirm', () => {
+  it('should import validated records and return result', async () => {
+    const result = await confirmImport({ entity: 'parent', records: [{ name: 'Jane', email: 'jane@x.com' }] });
+    expect(result.success).toBe(true);
+    expect(result.importedCount).toBeGreaterThan(0);
+  });
+});
+
