@@ -53,7 +53,9 @@
       "Bash(pnpm db:reset:*)",
       "Bash(pnpm db:migrate:drop:*)",
       "Bash(pnpm db:setup:*)",
-      "mcp__playwright__browser_drag"
+      "mcp__playwright__browser_drag",
+      "Bash(Select-String -Pattern \"admin@test.com\" -Path \"lib\\db\\seed.ts\" -Context 5)",
+      "mcp__playwright__browser_file_upload"
     ],
     "deny": [],
     "ask": []
