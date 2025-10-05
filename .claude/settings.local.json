@@ -55,7 +55,8 @@
       "Bash(pnpm db:setup:*)",
       "mcp__playwright__browser_drag",
       "Bash(Select-String -Pattern \"admin@test.com\" -Path \"lib\\db\\seed.ts\" -Context 5)",
-      "mcp__playwright__browser_file_upload"
+      "mcp__playwright__browser_file_upload",
+      "Bash(pnpm build:*)"
     ],
     "deny": [],
     "ask": []

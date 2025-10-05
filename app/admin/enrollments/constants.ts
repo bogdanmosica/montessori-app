@@ -1,0 +1,24 @@
+/**
+ * Enrollment Constants
+ */
+
+export const ENROLLMENT_STATUS = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  WITHDRAWN: 'WITHDRAWN',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export const ENROLLMENT_VALIDATION = {
+  CHILD_MIN_AGE: 0,
+  CHILD_MAX_AGE: 18,
+  CHILD_NAME_MAX_LENGTH: 100,
+  PARENT_NAME_MAX_LENGTH: 100,
+  NOTE_MAX_LENGTH: 1000,
+} as const;
+
+export const ENROLLMENT_PAGINATION = {
+  DEFAULT_PAGE: 1,
+  DEFAULT_LIMIT: 20,
+  MAX_LIMIT: 100,
+} as const;

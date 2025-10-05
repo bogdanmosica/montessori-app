@@ -1,4 +1,14 @@
 export enum ActivityType {
+  SIGN_UP = 'sign_up',
+  SIGN_IN = 'sign_in',
+  SIGN_OUT = 'sign_out',
+  UPDATE_PASSWORD = 'update_password',
+  DELETE_ACCOUNT = 'delete_account',
+  UPDATE_ACCOUNT = 'update_account',
+  CREATE_TEAM = 'create_team',
+  REMOVE_TEAM_MEMBER = 'remove_team_member',
+  INVITE_TEAM_MEMBER = 'invite_team_member',
+  ACCEPT_INVITATION = 'accept_invitation',
   LOGIN = 'login',
   LOGOUT = 'logout',
   APPLICATION_CREATE = 'application_create',
@@ -11,6 +21,16 @@ export enum ActivityType {
 }
 
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
+  [ActivityType.SIGN_UP]: 'Sign Up',
+  [ActivityType.SIGN_IN]: 'Sign In',
+  [ActivityType.SIGN_OUT]: 'Sign Out',
+  [ActivityType.UPDATE_PASSWORD]: 'Update Password',
+  [ActivityType.DELETE_ACCOUNT]: 'Delete Account',
+  [ActivityType.UPDATE_ACCOUNT]: 'Update Account',
+  [ActivityType.CREATE_TEAM]: 'Create Team',
+  [ActivityType.REMOVE_TEAM_MEMBER]: 'Remove Team Member',
+  [ActivityType.INVITE_TEAM_MEMBER]: 'Invite Team Member',
+  [ActivityType.ACCEPT_INVITATION]: 'Accept Invitation',
   [ActivityType.LOGIN]: 'User Login',
   [ActivityType.LOGOUT]: 'User Logout',
   [ActivityType.APPLICATION_CREATE]: 'Application Created',

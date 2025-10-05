@@ -55,7 +55,36 @@ export async function getPaymentAlerts(
     }
   ];
 
-  return { 
-    alerts: isResolved ? [] : mockAlerts.slice(0, limit) 
+  return {
+    alerts: isResolved ? [] : mockAlerts.slice(0, limit)
   };
+}
+
+export async function resolvePaymentAlert(
+  alertId: string,
+  schoolId: number,
+  resolutionNotes: string,
+  resolvedBy: number
+): Promise<void> {
+  // Stub implementation
+  console.log(`Alert ${alertId} resolved for school ${schoolId} by user ${resolvedBy}`);
+}
+
+export async function createWebhookFailureAlert(
+  schoolId: number,
+  webhookEvent: string,
+  errorMessage: string
+): Promise<void> {
+  // Stub implementation
+  console.log(`Webhook failure alert created for school ${schoolId}: ${errorMessage}`);
+}
+
+export async function createFailedPaymentAlert(
+  schoolId: number,
+  paymentId: string,
+  parentId: string,
+  errorMessage: string
+): Promise<void> {
+  // Stub implementation
+  console.log(`Failed payment alert created for school ${schoolId}, payment ${paymentId}`);
 }
