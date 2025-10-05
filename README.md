@@ -15,6 +15,7 @@ This is a starter template for building a SaaS application using **Next.js** wit
 - Global middleware to protect logged-in routes
 - Local middleware to protect Server Actions or validate Zod schemas
 - Activity logging system for any user events
+- **Excel Import Feature**: Bulk import Teachers, Parents, and Children from Excel files (Admin-only)
 
 ## Tech Stack
 
@@ -73,6 +74,42 @@ You can listen for Stripe webhooks locally through their CLI to handle subscript
 ```bash
 stripe listen --forward-to localhost:3000/api/stripe/webhook
 ```
+
+## Import Feature
+
+The Excel Import feature allows administrators to bulk import Teachers, Parents, and Children into the system.
+
+### Usage
+
+1. **Access Import Page**: Navigate to `/admin/import` (Admin access required)
+2. **Select Entity Type**: Choose from Teachers, Parents, or Children tabs
+3. **Download Template**: Click "Download Template" to get the Excel template
+4. **Fill Data**: Complete the template with required information
+5. **Upload File**: Select and upload the filled Excel file
+6. **Review Validation**: Check validation results and fix any errors
+7. **Confirm Import**: Review valid records and click "Confirm and Import"
+8. **View Results**: See import summary with imported, skipped, and error counts
+
+### Import Requirements
+
+**Teachers:**
+- Required: name, email
+- Optional: role, wage, nationality
+
+**Parents:**
+- Required: name, email
+- Optional: phone, children_names
+
+**Children:**
+- Required: firstName, lastName, dob, parent_email, monthly_fee_RON, enrollment_status
+- Note: Parent must exist before importing children
+
+### File Specifications
+- Formats: `.xlsx`, `.xls`
+- Maximum size: 10MB
+- Maximum rows: 1000 per import
+
+For detailed documentation, see [docs/import-feature.md](docs/import-feature.md).
 
 ## Testing Payments
 

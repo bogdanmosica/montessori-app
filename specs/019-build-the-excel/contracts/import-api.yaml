@@ -1,0 +1,105 @@
+openapi: 3.0.3
+info:
+  title: Montessori App Excel Import API
+  version: 1.0.0
+paths:
+  /admin/import/template/{entity}:
+    get:
+      summary: Download Excel template for entity
+      parameters:
+        - in: path
+          name: entity
+          required: true
+          schema:
+            type: string
+            enum: [teacher, parent, child]
+      responses:
+        '200':
+          description: Excel file download
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+  /admin/import/upload:
+    post:
+      summary: Upload filled Excel template
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                entity:
+                  type: string
+                  enum: [teacher, parent, child]
+      responses:
+        '200':
+          description: Validation summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationSummary'
+  /admin/import/confirm:
+    post:
+      summary: Confirm import of validated records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmImportRequest'
+      responses:
+        '200':
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResult'
+components:
+  schemas:
+    ValidationSummary:
+      type: object
+      properties:
+        importedRows:
+          type: integer
+        errorRows:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/RowError'
+    RowError:
+      type: object
+      properties:
+        rowNumber:
+          type: integer
+        error:
+          type: string
+    ConfirmImportRequest:
+      type: object
+      properties:
+        entity:
+          type: string
+          enum: [teacher, parent, child]
+        records:
+          type: array
+          items:
+            type: object
+    ImportResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        importedCount:
+          type: integer
+        errorCount:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/RowError'

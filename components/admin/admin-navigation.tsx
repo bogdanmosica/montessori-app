@@ -14,6 +14,7 @@ import {
   DollarSign,
   UserCog,
   FileText,
+  Upload,
   Menu,
   X,
   Home,
@@ -97,6 +98,12 @@ const navigationItems: NavigationItem[] = [
     href: ADMIN_ROUTES.TEACHERS,
     label: NAVIGATION_LABELS.TEACHERS,
     icon: <UserCog className="h-4 w-4" />,
+    isEnabled: true
+  },
+  {
+    href: ADMIN_ROUTES.IMPORT,
+    label: NAVIGATION_LABELS.IMPORT,
+    icon: <Upload className="h-4 w-4" />,
     isEnabled: true
   },
   {

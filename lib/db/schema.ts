@@ -288,6 +288,9 @@ export * from './schema/attendance';
 // Import observations schema
 export * from './schema/observations';
 
+// Import error logging schema
+export * from './schema/import-errors';
+
 export const schoolsRelations = relations(schools, ({ many }) => ({
   schoolMembers: many(schoolMembers),
   invitations: many(invitations),
