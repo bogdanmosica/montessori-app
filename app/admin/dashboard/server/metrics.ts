@@ -251,7 +251,6 @@ async function getMockTrendDataWithRealCalculations(
 
 async function calculateCashflowMetrics(schoolId: string): Promise<CashflowMetrics> {
   try {
-    console.log('🔄 Calculating real cashflow metrics for school:', schoolId);
     // Get school settings for base fee from schools table
     const schoolData = await db
       .select({
@@ -289,18 +288,6 @@ async function calculateCashflowMetrics(schoolId: string): Promise<CashflowMetri
       return sum + effectiveFee;
     }, 0);
 
-    console.log('📊 Cashflow calculation details:', {
-      totalChildren,
-      activeChildren: activeEnrollmentsWithFees.map(c => ({
-        childId: c.childId,
-        childName: `${c.childFirstName} ${c.childLastName}`,
-        childFee: c.childMonthlyFee,
-        effectiveFee: c.childMonthlyFee ?? 0,
-        childEnrollmentStatus: c.childEnrollmentStatus
-      })),
-      currentMonthRevenueInCents: currentMonthRevenue,
-      currentMonthRevenueInRON: currentMonthRevenue / 100,
-    });
 
     // Estimate families (assuming average of 1.5 children per family)
     const estimatedFamilies = Math.max(1, Math.round(totalChildren / 1.5));
@@ -316,14 +303,6 @@ async function calculateCashflowMetrics(schoolId: string): Promise<CashflowMetri
     const averageFeePerChild = totalChildren > 0 ? currentMonthRevenue / totalChildren : baseFeePerChild;
     const discountPerChild = baseFeePerChild - averageFeePerChild;
 
-    console.log('💰 Revenue calculation breakdown:', {
-      baseFeePerChild: baseFeePerChild,
-      totalChildren: totalChildren,
-      fullPriceRevenue: fullPriceRevenue,
-      actualRevenue: currentMonthRevenue,
-      discountsSavings: discountsSavings,
-      averageFeePerChild: averageFeePerChild
-    });
     const estimatedMultiChildFamilies = Math.round((discountPerChild * totalChildren) / (baseFeePerChild * 0.2)); // Assume 20% discount
     const estimatedSingleChildFamilies = Math.max(0, estimatedFamilies - estimatedMultiChildFamilies);
 

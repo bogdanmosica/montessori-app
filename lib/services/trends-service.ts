@@ -22,7 +22,6 @@ export class TrendsService {
     schoolId: string,
     period: 'week' | 'month' | 'quarter'
   ): Promise<TrendData> {
-    console.log(`🔄 Getting trend data for school ${schoolId}, period: ${period}`);
     try {
       const days = period === 'week' ? 7 : period === 'month' ? 30 : 90;
       
