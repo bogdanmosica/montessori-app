@@ -15,6 +15,13 @@
       "when": 1759657745869,
       "tag": "0001_spicy_runaways",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1759689426935,
+      "tag": "0002_gigantic_gertrude_yorkes",
+      "breakpoints": true
     }
   ]
 }

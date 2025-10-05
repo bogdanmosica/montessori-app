@@ -23,6 +23,14 @@ export const difficultyLevelEnum = pgEnum('difficulty_level', [
 ]);
 
 /**
+ * Lesson Visibility Enum
+ */
+export const lessonVisibilityEnum = pgEnum('lesson_visibility', [
+  'admin_global',
+  'teacher_private',
+]);
+
+/**
  * Lessons Table
  * Core lesson data with progress tracking enhancements
  */
@@ -33,11 +41,12 @@ export const lessons = pgTable(
     schoolId: integer('school_id')
       .notNull()
       .references(() => schools.id),
-    title: varchar('title', { length: 255 }).notNull(),
+    title: varchar('title', { length: 100 }).notNull(),
     description: text('description'),
     category: varchar('category', { length: 100 }).notNull(),
     estimatedDuration: integer('estimated_duration'), // in minutes
     difficultyLevel: difficultyLevelEnum('difficulty_level').notNull(),
+    visibility: lessonVisibilityEnum('visibility').notNull().default('teacher_private'),
     isTemplate: boolean('is_template').notNull().default(false),
     templateParentId: uuid('template_parent_id').references((): any => lessons.id),
     createdBy: integer('created_by')

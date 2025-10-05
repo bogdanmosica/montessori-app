@@ -14,7 +14,8 @@ import {
   Home,
   LogOut,
   Kanban,
-  ClipboardCheck
+  ClipboardCheck,
+  BookOpen
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -95,6 +96,12 @@ const navigationItems: NavigationItem[] = [
     href: TEACHER_ROUTES.STUDENTS,
     label: TEACHER_NAVIGATION_LABELS.STUDENTS,
     icon: <Users className="h-4 w-4" />,
+    isEnabled: true
+  },
+  {
+    href: TEACHER_ROUTES.LESSONS,
+    label: TEACHER_NAVIGATION_LABELS.LESSONS,
+    icon: <BookOpen className="h-4 w-4" />,
     isEnabled: true
   },
   {

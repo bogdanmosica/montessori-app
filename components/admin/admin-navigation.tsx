@@ -18,7 +18,8 @@ import {
   Menu,
   X,
   Home,
-  LogOut
+  LogOut,
+  BookOpen
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -92,6 +93,12 @@ const navigationItems: NavigationItem[] = [
     href: ADMIN_ROUTES.APPLICATIONS,
     label: NAVIGATION_LABELS.APPLICATIONS,
     icon: <GraduationCap className="h-4 w-4" />,
+    isEnabled: true
+  },
+  {
+    href: ADMIN_ROUTES.LESSONS,
+    label: NAVIGATION_LABELS.LESSONS,
+    icon: <BookOpen className="h-4 w-4" />,
     isEnabled: true
   },
   {

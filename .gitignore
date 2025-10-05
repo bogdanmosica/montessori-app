@@ -41,3 +41,14 @@ postgres_data/
 .env*.local
 
 .playwright-mcp
+
+# Python (not used in this Next.js project)
+*.py[cod]
+__pycache__/
+venv/
+.venv/
+env/
+.env/
+*.egg-info/
+dist/
+build/
