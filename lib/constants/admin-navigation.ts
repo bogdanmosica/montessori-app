@@ -1,6 +1,7 @@
 export const ADMIN_ROUTES = {
   DASHBOARD: '/admin/dashboard',
   APPLICATIONS: '/admin/applications',
+  LESSONS: '/admin/lessons',
   PAYMENTS: '/admin/payments',
   TEACHERS: '/admin/teachers',
   IMPORT: '/admin/import',
@@ -10,6 +11,7 @@ export const ADMIN_ROUTES = {
 export const NAVIGATION_LABELS = {
   DASHBOARD: 'Dashboard',
   APPLICATIONS: 'Students',
+  LESSONS: 'Lessons',
   PAYMENTS: 'Payments',
   TEACHERS: 'Teachers',
   IMPORT: 'Import',

@@ -7,7 +7,7 @@
 
 import { db } from '@/lib/db/drizzle';
 import { progressColumns } from '@/lib/db/schema/progress-columns';
-import { teams } from '@/lib/db/schema';
+import { schools } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -70,17 +70,17 @@ async function seedProgressColumns() {
     console.log('Starting progress columns seed...');
 
     // Get all schools
-    const schools = await db.select({ id: teams.id }).from(teams);
+    const schoolsList = await db.select({ id: schools.id }).from(schools);
 
-    if (schools.length === 0) {
+    if (schoolsList.length === 0) {
       console.warn('No schools found. Please create schools first.');
       return;
     }
 
-    console.log(`Found ${schools.length} school(s)`);
+    console.log(`Found ${schoolsList.length} school(s)`);
 
     // Seed columns for each school
-    for (const school of schools) {
+    for (const school of schoolsList) {
       await seedProgressColumnsForSchool(school.id);
     }
 

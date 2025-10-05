@@ -1,0 +1,86 @@
+openapi: 3.0.0
+info:
+  title: Lessons Management API
+  version: 1.0.0
+paths:
+  /api/lessons:
+    get:
+      summary: List lessons (role-based filtering)
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of lessons
+    post:
+      summary: Create a new lesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LessonInput'
+      responses:
+        '201':
+          description: Lesson created
+  /api/lessons/{id}:
+    get:
+      summary: Get lesson by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lesson details
+    put:
+      summary: Update lesson
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LessonInput'
+      responses:
+        '200':
+          description: Lesson updated
+    delete:
+      summary: Delete lesson
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Lesson deleted
+components:
+  schemas:
+    LessonInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        visibility:
+          type: string
+        schoolId:
+          type: string
